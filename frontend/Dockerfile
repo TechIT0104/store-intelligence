@@ -12,5 +12,5 @@ COPY nginx.conf /etc/nginx/conf.d/storeiq.conf
 COPY --from=build /app/dist /usr/share/nginx/html
 EXPOSE 8050
 HEALTHCHECK --interval=15s --timeout=3s --start-period=5s --retries=5 \
-  CMD wget -q --spider http://localhost:8050/ || exit 1
+  CMD wget -qO- http://127.0.0.1:8050/ >/dev/null 2>&1 || exit 1
 CMD ["nginx", "-g", "daemon off;"]
