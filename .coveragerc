@@ -1,0 +1,19 @@
+# Coverage config. We measure the API (app/) and the pipeline's pure logic.
+# detect.py is the GPU+video detection entrypoint — it requires CUDA, the YOLO
+# weights and the raw clips, so it is exercised via the integration path
+# (run.sh -> events.jsonl), not unit tests. Omitting it keeps the coverage number
+# honest about what the unit suite actually verifies.
+[run]
+branch = False
+omit =
+    pipeline/detect.py
+    data/synth/*
+    tests/*
+    */__init__.py
+
+[report]
+show_missing = True
+exclude_lines =
+    pragma: no cover
+    if __name__ == .__main__.:
+    raise NotImplementedError

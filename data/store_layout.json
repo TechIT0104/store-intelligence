@@ -1,0 +1,84 @@
+{
+  "store_id": "STORE_BLR_002",
+  "store_name": "Apex Retail - Bengaluru Indiranagar (anonymised)",
+  "city": "BLR",
+  "timezone": "Asia/Kolkata",
+  "open_hours": { "open": "10:00", "close": "22:00" },
+  "frame_size": { "width": 1920, "height": 1080 },
+  "_notes": "Dataset shipped 5 camera clips for ONE physical store. We map them to STORE_BLR_002 (the id the acceptance gate probes). Source clips are ~2-2.5 min at 25-30fps; clip overlay timestamp is 2026-10-04 ~20:09 IST, which we use as each clip's start time. Zone polygons are in pixel coordinates of the 1920x1080 frame and were derived by visual inspection of a mid-clip frame per camera; they are refined in pipeline/zones.py.",
+  "cameras": [
+    {
+      "camera_id": "CAM_ENTRY_01",
+      "source_clip": "CAM 3.mp4",
+      "role": "entry_exit",
+      "fps": 29.97,
+      "covers_zones": ["ENTRY"],
+      "entry_line": {
+        "_desc": "Crossing this segment inbound (toward store interior, i.e. moving up-left into the wooden floor) = ENTRY; outbound = EXIT. Tuned against CAM 3.",
+        "p1": [560, 130],
+        "p2": [980, 470],
+        "inside_normal": [-1, 1]
+      },
+      "overlaps_with": ["CAM_FLOOR_01"]
+    },
+    {
+      "camera_id": "CAM_FLOOR_01",
+      "source_clip": "CAM 1.mp4",
+      "role": "main_floor",
+      "fps": 29.97,
+      "covers_zones": ["SKINCARE"],
+      "zones": {
+        "SKINCARE": { "polygon": [[0, 120], [1920, 120], [1920, 1080], [0, 1080]], "sku_zone": "SKINCARE" }
+      },
+      "overlaps_with": ["CAM_ENTRY_01"]
+    },
+    {
+      "camera_id": "CAM_FLOOR_02",
+      "source_clip": "CAM 2.mp4",
+      "role": "main_floor",
+      "fps": 29.97,
+      "covers_zones": ["MAKEUP"],
+      "zones": {
+        "MAKEUP": { "polygon": [[0, 120], [1920, 120], [1920, 1080], [0, 1080]], "sku_zone": "MAKEUP" }
+      },
+      "overlaps_with": []
+    },
+    {
+      "camera_id": "CAM_BILLING_01",
+      "source_clip": "CAM 5.mp4",
+      "role": "billing",
+      "fps": 25.0,
+      "covers_zones": ["BILLING"],
+      "zones": {
+        "BILLING": { "polygon": [[0, 120], [1920, 120], [1920, 1080], [0, 1080]], "sku_zone": "BILLING" }
+      },
+      "queue_region": { "polygon": [[0, 430], [1920, 430], [1920, 1080], [0, 1080]] },
+      "counter_line": { "p1": [200, 600], "p2": [1300, 520] },
+      "staff_zone": {
+        "_desc": "Upper region behind the billing counter (cash desk) at 1920x1080 — only staff stand here. Strong staff signal (tested with the box centre since legs are occluded).",
+        "polygon": [[500, 0], [1700, 0], [1700, 470], [500, 430]]
+      },
+      "overlaps_with": []
+    },
+    {
+      "camera_id": "CAM_BACK_01",
+      "source_clip": "CAM 4.mp4",
+      "role": "stockroom",
+      "fps": 25.0,
+      "covers_zones": ["STOCKROOM"],
+      "zones": {
+        "STOCKROOM": { "polygon": [[0, 0], [1920, 0], [1920, 1080], [0, 1080]], "sku_zone": "STOCKROOM" }
+      },
+      "staff_only": true,
+      "_notes": "Backroom/stock area. Anyone detected here is treated as staff (is_staff=true). Not part of customer-facing zones.",
+      "overlaps_with": []
+    }
+  ],
+  "zone_catalogue": ["ENTRY", "SKINCARE", "MAKEUP", "BILLING", "STOCKROOM"],
+  "staff_rules": {
+    "uniform_dark_clothing": true,
+    "uniform_hint": "Store staff wear dark/black uniform tops; dominant upper-body color near-black is a staff signal.",
+    "stockroom_presence_is_staff": true,
+    "vlm_validation": true
+  }
+}

@@ -1,0 +1,48 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+.pytest_cache/
+.coverage
+htmlcov/
+coverage.xml
+
+# Env / secrets
+.env
+*.env
+!.env.example
+
+# Models / weights (downloaded at build/run time)
+*.pt
+*.onnx
+yolov8*.pt
+
+# Data artifacts (large / generated)
+data/clips/
+data/frames/
+pipeline/output/*.jsonl
+!pipeline/output/.gitkeep
+
+# OS / IDE
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Docker / volumes
+pgdata/
+
+# Frontend build artifacts
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+
+# local run logs / db
+*.log
+storeiq.db
+
+# debug preview frames (extracted during zone design)
+data/frames_preview/

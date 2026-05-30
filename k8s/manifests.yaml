@@ -1,0 +1,171 @@
+# Kubernetes deployment path (BONUS). docker-compose remains the acceptance-gate
+# source of truth; this shows how the same stack maps to K8s for production.
+# Build + load the image first (see k8s/README.md):
+#   docker build -t store-intelligence:local .
+#   kind load docker-image store-intelligence:local   # or push to a registry
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: storeiq
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: storeiq-config
+  namespace: storeiq
+data:
+  REDIS_URL: redis://redis:6379/0
+  STORE_LAYOUT_PATH: /app/data/store_layout.json
+  POS_CSV_PATH: /app/data/pos_transactions.csv
+  STORE_ID: STORE_BLR_002
+  LOG_LEVEL: INFO
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: storeiq-secret
+  namespace: storeiq
+type: Opaque
+stringData:
+  # In real clusters this comes from a secrets manager, not git.
+  DATABASE_URL: postgresql+psycopg://storeiq:storeiq@postgres:5432/storeiq
+  POSTGRES_PASSWORD: storeiq
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres
+  namespace: storeiq
+spec:
+  replicas: 1
+  selector: { matchLabels: { app: postgres } }
+  template:
+    metadata: { labels: { app: postgres } }
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:16-alpine
+          env:
+            - { name: POSTGRES_USER, value: storeiq }
+            - { name: POSTGRES_DB, value: storeiq }
+            - name: POSTGRES_PASSWORD
+              valueFrom: { secretKeyRef: { name: storeiq-secret, key: POSTGRES_PASSWORD } }
+          ports: [{ containerPort: 5432 }]
+          readinessProbe:
+            exec: { command: ["pg_isready", "-U", "storeiq"] }
+            initialDelaySeconds: 5
+            periodSeconds: 5
+---
+apiVersion: v1
+kind: Service
+metadata: { name: postgres, namespace: storeiq }
+spec:
+  selector: { app: postgres }
+  ports: [{ port: 5432, targetPort: 5432 }]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis
+  namespace: storeiq
+spec:
+  replicas: 1
+  selector: { matchLabels: { app: redis } }
+  template:
+    metadata: { labels: { app: redis } }
+    spec:
+      containers:
+        - name: redis
+          image: redis:7-alpine
+          ports: [{ containerPort: 6379 }]
+          readinessProbe:
+            exec: { command: ["redis-cli", "ping"] }
+            initialDelaySeconds: 3
+            periodSeconds: 5
+---
+apiVersion: v1
+kind: Service
+metadata: { name: redis, namespace: storeiq }
+spec:
+  selector: { app: redis }
+  ports: [{ port: 6379, targetPort: 6379 }]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api
+  namespace: storeiq
+spec:
+  replicas: 2                       # API is stateless -> scale horizontally
+  selector: { matchLabels: { app: api } }
+  template:
+    metadata: { labels: { app: api } }
+    spec:
+      containers:
+        - name: api
+          image: store-intelligence:local
+          imagePullPolicy: IfNotPresent
+          command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+          envFrom:
+            - configMapRef: { name: storeiq-config }
+            - secretRef: { name: storeiq-secret }
+          ports: [{ containerPort: 8000 }]
+          readinessProbe:
+            httpGet: { path: /health, port: 8000 }
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet: { path: /health, port: 8000 }
+            initialDelaySeconds: 10
+            periodSeconds: 15
+          resources:
+            requests: { cpu: "100m", memory: "256Mi" }
+            limits: { cpu: "500m", memory: "512Mi" }
+---
+apiVersion: v1
+kind: Service
+metadata: { name: api, namespace: storeiq }
+spec:
+  selector: { app: api }
+  ports: [{ port: 8000, targetPort: 8000 }]
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata: { name: api-hpa, namespace: storeiq }
+spec:
+  scaleTargetRef: { apiVersion: apps/v1, kind: Deployment, name: api }
+  minReplicas: 2
+  maxReplicas: 8
+  metrics:
+    - type: Resource
+      resource: { name: cpu, target: { type: Utilization, averageUtilization: 70 } }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dashboard
+  namespace: storeiq
+spec:
+  replicas: 1
+  selector: { matchLabels: { app: dashboard } }
+  template:
+    metadata: { labels: { app: dashboard } }
+    spec:
+      containers:
+        - name: dashboard
+          image: store-intelligence:local
+          imagePullPolicy: IfNotPresent
+          command: ["uvicorn", "dashboard.server:app", "--host", "0.0.0.0", "--port", "8050"]
+          env:
+            - { name: API_URL, value: http://api:8000 }
+          envFrom:
+            - configMapRef: { name: storeiq-config }
+          ports: [{ containerPort: 8050 }]
+---
+apiVersion: v1
+kind: Service
+metadata: { name: dashboard, namespace: storeiq }
+spec:
+  type: NodePort
+  selector: { app: dashboard }
+  ports: [{ port: 8050, targetPort: 8050, nodePort: 30850 }]

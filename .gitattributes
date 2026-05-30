@@ -1,0 +1,14 @@
+# Normalise line endings to LF in the repo so shell scripts and configs that run
+# inside Linux containers (run.sh, nginx.conf, Dockerfiles) are never CRLF-broken.
+* text=auto eol=lf
+
+*.sh text eol=lf
+*.conf text eol=lf
+Dockerfile text eol=lf
+
+# Binary assets
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.pt binary
+*.ico binary
