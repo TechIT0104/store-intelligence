@@ -54,6 +54,37 @@ export function useEventStream() {
   return { items, total, connected };
 }
 
+export function useTheme(): [boolean, () => void] {
+  const [dark, setDark] = useState<boolean>(() => {
+    const saved = localStorage.getItem("theme");
+    if (saved) return saved === "dark";
+    return window.matchMedia?.("(prefers-color-scheme: dark)").matches ?? false;
+  });
+  useEffect(() => {
+    document.documentElement.classList.toggle("dark", dark);
+    localStorage.setItem("theme", dark ? "dark" : "light");
+  }, [dark]);
+  return [dark, () => setDark((d) => !d)];
+}
+
+// Samples a running total at a fixed interval and returns the per-interval deltas
+// (a live throughput series for the sparkline).
+export function useThroughput(total: number, samples = 30, intervalMs = 2000): number[] {
+  const [series, setSeries] = useState<number[]>([]);
+  const lastRef = useRef(total);
+  useEffect(() => {
+    const id = setInterval(() => {
+      setSeries((s) => {
+        const delta = Math.max(0, total - lastRef.current);
+        lastRef.current = total;
+        return [...s, delta].slice(-samples);
+      });
+    }, intervalMs);
+    return () => clearInterval(id);
+  }, [total, samples, intervalMs]);
+  return series;
+}
+
 export function useCountUp(value: number, ms = 600): number {
   const [display, setDisplay] = useState(value);
   const fromRef = useRef(value);

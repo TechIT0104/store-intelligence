@@ -1,4 +1,4 @@
-import { Anomaly, Funnel, Heatmap, Metrics } from "./api";
+import { Anomaly, Funnel, Heatmap } from "./api";
 import { FeedItem, useCountUp } from "./hooks";
 
 export function Card({ children, className = "", delay = 0 }:
@@ -19,7 +19,8 @@ export function Kpi({ label, value, suffix = "", sub, accent }:
     <Card>
       <div className="text-[13px] font-medium tracking-wide text-ink-faint uppercase">{label}</div>
       <div className="mt-2 flex items-end gap-1">
-        <span className="text-5xl font-semibold tnum tracking-tight" style={{ color: accent ?? "#1d1d1f" }}>
+        <span className={`text-5xl font-semibold tnum tracking-tight ${accent ? "" : "text-ink"}`}
+          style={accent ? { color: accent } : undefined}>
           {isPct ? v.toFixed(1) : Math.round(v)}
         </span>
         <span className="text-2xl font-medium text-ink-soft mb-1">{suffix}</span>
@@ -153,6 +154,75 @@ export function AnomaliesView({ anomalies }: { anomalies?: Anomaly[] }) {
             <div className="text-[13px] text-accent mt-1">→ {a.suggested_action}</div>
           </div>
         ))}
+      </div>
+    </Card>
+  );
+}
+
+export function Sparkline({ data }: { data: number[] }) {
+  const w = 240, h = 56, pad = 4;
+  const max = Math.max(1, ...data);
+  const n = Math.max(1, data.length - 1);
+  const pts = data.map((v, i) =>
+    `${pad + (i * (w - 2 * pad)) / n},${h - pad - (v / max) * (h - 2 * pad)}`).join(" ");
+  const last = data[data.length - 1] ?? 0;
+  return (
+    <Card delay={40}>
+      <div className="flex items-center justify-between">
+        <div className="text-[13px] font-medium tracking-wide text-ink-faint uppercase">Event Throughput</div>
+        <span className="text-[13px] text-ink-soft tnum">{last}/2s</span>
+      </div>
+      <svg width="100%" viewBox={`0 0 ${w} ${h}`} className="mt-3" preserveAspectRatio="none">
+        <defs>
+          <linearGradient id="spark" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#0071e3" stopOpacity="0.35" />
+            <stop offset="100%" stopColor="#0071e3" stopOpacity="0" />
+          </linearGradient>
+        </defs>
+        {data.length > 1 && (
+          <>
+            <polygon points={`${pad},${h - pad} ${pts} ${w - pad},${h - pad}`} fill="url(#spark)" />
+            <polyline points={pts} fill="none" stroke="#0071e3" strokeWidth="2"
+              strokeLinejoin="round" strokeLinecap="round" />
+          </>
+        )}
+      </svg>
+    </Card>
+  );
+}
+
+// Schematic store floor: zones placed like the real layout, intensity = heatmap freq.
+const ZONE_POS: Record<string, { x: number; y: number; w: number; h: number }> = {
+  STOCKROOM: { x: 4, y: 4, w: 28, h: 26 },
+  SKINCARE: { x: 36, y: 4, w: 30, h: 42 },
+  MAKEUP: { x: 70, y: 4, w: 26, h: 42 },
+  BILLING: { x: 36, y: 50, w: 30, h: 30 },
+  ENTRY: { x: 70, y: 50, w: 26, h: 30 },
+};
+
+export function ZoneMap({ heatmap }: { heatmap?: Heatmap }) {
+  const byZone = new Map((heatmap?.zones ?? []).map((z) => [z.zone_id, z]));
+  const heat = (s: number) => `rgba(0,113,227,${0.12 + 0.0085 * Math.min(100, s)})`;
+  return (
+    <Card delay={60}>
+      <div className="text-[13px] font-medium tracking-wide text-ink-faint uppercase">Store Floor Activity</div>
+      <div className="relative mt-3 w-full" style={{ paddingBottom: "62%" }}>
+        <div className="absolute inset-0 rounded-2xl bg-canvas overflow-hidden">
+          {Object.entries(ZONE_POS).map(([zid, p]) => {
+            const z = byZone.get(zid);
+            const score = z?.freq_score ?? 0;
+            return (
+              <div key={zid} className="absolute rounded-lg border border-black/10 flex flex-col
+                items-center justify-center text-center transition-all duration-700"
+                style={{ left: `${p.x}%`, top: `${p.y}%`, width: `${p.w}%`, height: `${p.h}%`,
+                  background: zid === "ENTRY" ? "rgba(52,199,89,0.18)" : heat(score) }}>
+                <span className="text-[12px] font-semibold text-ink">{zid}</span>
+                {z && <span className="text-[11px] text-ink-soft tnum">{z.visits} · {z.avg_dwell_seconds}s</span>}
+                {zid === "ENTRY" && <span className="text-[11px] text-good">▲ entry</span>}
+              </div>
+            );
+          })}
+        </div>
       </div>
     </Card>
   );

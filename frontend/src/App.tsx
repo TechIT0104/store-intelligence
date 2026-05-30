@@ -1,9 +1,12 @@
-import { useDashboard, useEventStream } from "./hooks";
-import { AnomaliesView, EventFeed, FunnelView, Gauge, HeatmapView, Kpi } from "./components";
+import { useDashboard, useEventStream, useTheme, useThroughput } from "./hooks";
+import { AnomaliesView, EventFeed, FunnelView, Gauge, HeatmapView, Kpi,
+         Sparkline, ZoneMap } from "./components";
 
 export default function App() {
   const snap = useDashboard();
   const feed = useEventStream();
+  const [dark, toggleTheme] = useTheme();
+  const throughput = useThroughput(feed.total);
   const m = snap.metrics;
   const store = snap.health?.stores?.[0];
 
@@ -30,6 +33,11 @@ export default function App() {
                 {store.feed === "STALE_FEED" ? "Feed stale" : "Feed healthy"}
               </span>
             )}
+            <button onClick={toggleTheme} aria-label="Toggle theme"
+              className="w-9 h-9 rounded-full bg-black/5 dark:bg-white/10 flex items-center
+                justify-center hover:bg-black/10 dark:hover:bg-white/20 transition-colors">
+              {dark ? "☀️" : "🌙"}
+            </button>
           </div>
         </div>
       </header>
@@ -60,11 +68,19 @@ export default function App() {
           <div className="lg:col-span-2"><FunnelView funnel={snap.funnel} /></div>
         </section>
 
-        {/* heatmap + anomalies + feed */}
+        {/* store floor map + heatmap + anomalies */}
         <section className="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-4">
+          <ZoneMap heatmap={snap.heatmap} />
           <HeatmapView heatmap={snap.heatmap} />
           <AnomaliesView anomalies={snap.anomalies?.anomalies} />
-          <EventFeed items={feed.items} total={feed.total} connected={feed.connected} />
+        </section>
+
+        {/* live throughput + event feed */}
+        <section className="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-4">
+          <Sparkline data={throughput} />
+          <div className="lg:col-span-2">
+            <EventFeed items={feed.items} total={feed.total} connected={feed.connected} />
+          </div>
         </section>
 
         <footer className="mt-10 text-center text-[12px] text-ink-faint">

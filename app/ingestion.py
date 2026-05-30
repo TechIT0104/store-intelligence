@@ -8,11 +8,44 @@ POST /events/ingest must:
 """
 from __future__ import annotations
 
+from datetime import datetime, timezone
+
 from pydantic import ValidationError
 from sqlalchemy import select
 
 from .db import EventRow, session_scope
 from .models import Event, IngestItemError, IngestResponse
+from .observability import EVENTS_INGESTED
+
+
+def _conflict_safe_insert(session, rows: list["EventRow"]) -> None:
+    """Bulk insert that is safe under concurrent identical payloads.
+
+    Uses INSERT ... ON CONFLICT DO NOTHING on the event_id primary key (Postgres
+    and SQLite both support it), so two requests racing the same event_id can't
+    raise a primary-key violation -> idempotency holds even under concurrency.
+    """
+    if not rows:
+        return
+    dialect = session.bind.dialect.name
+    values = [{
+        "event_id": r.event_id, "store_id": r.store_id, "camera_id": r.camera_id,
+        "visitor_id": r.visitor_id, "event_type": r.event_type, "ts": r.ts,
+        "zone_id": r.zone_id, "dwell_ms": r.dwell_ms, "is_staff": r.is_staff,
+        "confidence": r.confidence, "queue_depth": r.queue_depth,
+        "sku_zone": r.sku_zone, "session_seq": r.session_seq,
+        # Core insert bypasses the ORM Python-side default, so set it explicitly.
+        "ingested_at": r.ingested_at or datetime.now(timezone.utc),
+    } for r in rows]
+    if dialect == "postgresql":
+        from sqlalchemy.dialects.postgresql import insert as _ins
+    elif dialect == "sqlite":
+        from sqlalchemy.dialects.sqlite import insert as _ins
+    else:  # fallback: plain add (other engines)
+        session.add_all(rows)
+        return
+    session.execute(_ins(EventRow).values(values).on_conflict_do_nothing(
+        index_elements=["event_id"]))
 
 
 def _to_row(ev: Event) -> EventRow:
@@ -68,9 +101,11 @@ def ingest_events(raw_events: list[dict]) -> IngestResponse:
                 else:
                     to_insert.append(_to_row(ev))
             if to_insert:
-                s.add_all(to_insert)
+                _conflict_safe_insert(s, to_insert)
                 accepted = len(to_insert)
 
+    if accepted:
+        EVENTS_INGESTED.inc(accepted)
     return IngestResponse(
         received=received,
         accepted=accepted,

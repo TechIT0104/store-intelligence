@@ -128,6 +128,14 @@ def health():
     return health_report()
 
 
+@app.get("/metrics")
+def prometheus_metrics():
+    from fastapi import Response
+    from .observability import render_latest
+    body, content_type = render_latest()
+    return Response(content=body, media_type=content_type)
+
+
 @app.get("/stream/{store_id}")
 def stream(store_id: str):
     return StreamingResponse(

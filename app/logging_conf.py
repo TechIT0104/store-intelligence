@@ -54,7 +54,13 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
             status_code = response.status_code
             return response
         finally:
-            latency_ms = round((time.perf_counter() - start) * 1000, 2)
+            latency_s = time.perf_counter() - start
+            latency_ms = round(latency_s * 1000, 2)
+            try:
+                from .observability import record_request
+                record_request(request.url.path, request.method, status_code, latency_s)
+            except Exception:
+                pass
             logger.info(
                 "request",
                 extra={

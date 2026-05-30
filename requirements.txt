@@ -8,6 +8,7 @@ psycopg[binary]==3.2.3
 redis==5.2.1
 requests==2.32.3   # replayer -> API ingest
 python-json-logger==3.2.1
+prometheus-client==0.21.1
 httpx==0.28.1
 numpy==2.1.3       # used by pipeline.reid/staff (also imported in pipeline unit tests)
 
