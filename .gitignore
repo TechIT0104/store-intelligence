@@ -24,6 +24,7 @@ yolov8*.pt
 data/clips/
 data/frames/
 pipeline/output/*.jsonl
+pipeline/output/*.mp4
 !pipeline/output/.gitkeep
 
 # OS / IDE

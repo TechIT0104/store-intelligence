@@ -43,6 +43,9 @@ docker compose restart replayer                      # replay the freshly detect
 ```
 
 - Output: **`pipeline/output/events.jsonl`** (the canonical event stream).
+- **Annotated demo video**: add `--annotate` (or `make annotate CLIP="CAM 2.mp4"`) to
+  render `pipeline/output/annotated_*.mp4` with live bounding boxes, track/visitor IDs,
+  zone overlays, the entry/exit line and running entry/exit counts.
 - `DEVICE=cpu` by default (clips are short — CPU finishes in minutes). Set
   `DEVICE=0` with a CUDA torch build to use the GPU.
 - `SAMPLE_FPS=5` controls frame sampling (source is 25–30 fps).
@@ -103,6 +106,13 @@ Edge cases covered: empty store, all-staff clip, zero purchases, re-entry in the
 funnel, idempotent re-ingest, malformed-event partial success, DB-down → 503.
 
 ---
+
+## Developer tooling
+
+- **Makefile**: `make up` · `make test` · `make detect` · `make annotate` · `make down`
+  (run `make help` for all targets). Windows users can use the equivalent commands above.
+- **CI** (`.github/workflows/ci.yml`): on every push it runs the test suite with a
+  70% coverage gate, builds the frontend, and builds the Docker images.
 
 ## Layout
 

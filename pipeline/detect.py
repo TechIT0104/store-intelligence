@@ -56,6 +56,49 @@ def foot_point(xyxy) -> tuple[float, float]:
     return ((x1 + x2) / 2.0, float(y2))   # bottom-center = where the person stands
 
 
+def draw_overlays(frame, cam, items, hud):
+    """Render detection/tracking/zone overlays onto a frame copy for the demo video."""
+    import cv2
+    import numpy as np
+    out = frame.copy()
+    overlay = out.copy()
+    # zone polygons (translucent)
+    for zid, poly in cam.zones.items():
+        pts = np.array(poly, dtype=np.int32)
+        cv2.fillPoly(overlay, [pts], (255, 180, 90))
+        cv2.polylines(out, [pts], True, (255, 180, 90), 2)
+        cx, cy = int(np.mean(pts[:, 0])), int(np.mean(pts[:, 1]))
+        cv2.putText(out, zid, (cx - 40, cy), cv2.FONT_HERSHEY_SIMPLEX, 0.9,
+                    (255, 220, 150), 2, cv2.LINE_AA)
+    cv2.addWeighted(overlay, 0.15, out, 0.85, 0, out)
+    # entry line
+    if cam.entry_line is not None:
+        p1 = tuple(int(v) for v in cam.entry_line.p1)
+        p2 = tuple(int(v) for v in cam.entry_line.p2)
+        cv2.line(out, p1, p2, (60, 220, 255), 3)
+        cv2.putText(out, "ENTRY/EXIT line", (p1[0], p1[1] - 10),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, (60, 220, 255), 2, cv2.LINE_AA)
+    # people
+    for it in items:
+        x1, y1, x2, y2 = [int(v) for v in it["xyxy"]]
+        staffish = it["dark"] >= 0.6
+        color = (40, 120, 240) if staffish else (80, 220, 120)   # staff-ish red / customer green
+        cv2.rectangle(out, (x1, y1), (x2, y2), color, 2)
+        label = f"{it['vid']}  {it['conf']:.2f}"
+        if it["zone"]:
+            label += f"  {it['zone']}"
+        cv2.rectangle(out, (x1, y1 - 22), (x1 + 11 * len(label), y1), color, -1)
+        cv2.putText(out, label, (x1 + 2, y1 - 6), cv2.FONT_HERSHEY_SIMPLEX, 0.5,
+                    (20, 20, 20), 1, cv2.LINE_AA)
+    # HUD
+    cv2.rectangle(out, (0, 0), (520, 96), (25, 25, 35), -1)
+    cv2.putText(out, f"{cam.camera_id}", (12, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.8,
+                (255, 255, 255), 2, cv2.LINE_AA)
+    cv2.putText(out, f"ENTRY {hud['entry']}   EXIT {hud['exit']}   tracks {hud['tracks']}",
+                (12, 66), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (120, 230, 160), 2, cv2.LINE_AA)
+    return out
+
+
 def _evidence(evidence, vid) -> VisitorEvidence:
     if vid not in evidence:
         evidence[vid] = VisitorEvidence(visitor_id=vid)
@@ -65,12 +108,14 @@ def _evidence(evidence, vid) -> VisitorEvidence:
 def process_camera(cam: CameraLayout, clip_path: Path, layout: StoreLayout,
                    registry: VisitorRegistry, emitter: EventEmitter, model,
                    sample_fps: float, device: str,
-                   evidence: dict[str, VisitorEvidence], crops: dict[str, tuple]):
+                   evidence: dict[str, VisitorEvidence], crops: dict[str, tuple],
+                   writer=None):
     cap_fps = cam.fps or 25.0
     vid_stride = max(1, int(round(cap_fps / sample_fps)))
     half = device not in ("cpu", "", None)
 
     states: dict[int, TrackState] = {}
+    hud = {"entry": 0, "exit": 0, "tracks": 0}
     print(f"[detect] {cam.camera_id} <- {clip_path.name} (stride={vid_stride})")
 
     results = model.track(
@@ -86,6 +131,8 @@ def process_camera(cam: CameraLayout, clip_path: Path, layout: StoreLayout,
         boxes = r.boxes
         frame = r.orig_img
         if boxes is None or boxes.id is None:
+            if writer is not None and frame is not None:
+                writer.write(draw_overlays(frame, cam, [], hud))
             continue
 
         ids = boxes.id.cpu().numpy().astype(int)
@@ -99,6 +146,7 @@ def process_camera(cam: CameraLayout, clip_path: Path, layout: StoreLayout,
                     queue_depth += 1
 
         seen_ids = set()
+        draw_items = []
         for tid, xyxy, conf in zip(ids, xyxys, confs):
             seen_ids.add(int(tid))
             fp = foot_point(xyxy)
@@ -110,7 +158,8 @@ def process_camera(cam: CameraLayout, clip_path: Path, layout: StoreLayout,
             ev = _evidence(evidence, visitor_id)
             ev.observe(t)
             ev.appearance_votes += 1
-            if dark_uniform_score(frame, xyxy) >= 0.6:
+            dark = dark_uniform_score(frame, xyxy)
+            if dark >= 0.6:
                 ev.dark_votes += 1
             if cam.staff_only:
                 ev.in_stockroom = True
@@ -142,9 +191,11 @@ def process_camera(cam: CameraLayout, clip_path: Path, layout: StoreLayout,
                 direction = cam.entry_line.crossing_direction(st.last_foot, fp)
                 if direction == "ENTRY":
                     _emit("REENTRY" if is_reentry else "ENTRY")
+                    hud["entry"] += 1
                 elif direction == "EXIT":
                     _emit("EXIT")
                     registry.mark_exited(visitor_id, t)
+                    hud["exit"] += 1
 
             # --- zones (floor / billing cameras) ---
             zone = cam.zone_at(fp)
@@ -175,6 +226,9 @@ def process_camera(cam: CameraLayout, clip_path: Path, layout: StoreLayout,
                 st.last_dwell_t = t
 
             st.last_foot = fp
+            if writer is not None:
+                draw_items.append({"xyxy": xyxy, "vid": visitor_id, "conf": float(conf),
+                                   "zone": zone, "dark": dark})
 
         # tracks that disappeared: close any open zone
         for tid in list(states.keys()):
@@ -188,6 +242,10 @@ def process_camera(cam: CameraLayout, clip_path: Path, layout: StoreLayout,
                                  is_staff=False, confidence=0.4,
                                  sku_zone=cam.sku_zone.get(st.current_zone))
                     st.current_zone = None
+
+        if writer is not None:
+            hud["tracks"] = len(seen_ids)
+            writer.write(draw_overlays(frame, cam, draw_items, hud))
 
 
 def decide_staff(evidence, crops, vlm: StaffVLM) -> dict[str, dict]:
@@ -219,6 +277,8 @@ def main():
     ap.add_argument("--sample-fps", type=float, default=float(os.environ.get("SAMPLE_FPS", 5)))
     ap.add_argument("--device", default=os.environ.get("DEVICE", "cpu"))
     ap.add_argument("--only", default=None)
+    ap.add_argument("--annotate", action="store_true",
+                    help="also render an annotated demo video for processed clips")
     args = ap.parse_args()
 
     layout = StoreLayout.load(args.layout)
@@ -245,8 +305,19 @@ def main():
         if not clip_path.exists():
             print(f"[detect] WARN missing clip: {clip_path}")
             continue
+        writer = None
+        if args.annotate:
+            import cv2
+            out_dir = Path(args.out).parent
+            vpath = out_dir / f"annotated_{Path(cam.source_clip).stem}.mp4"
+            writer = cv2.VideoWriter(str(vpath), cv2.VideoWriter_fourcc(*"mp4v"),
+                                     args.sample_fps,
+                                     (layout.frame_width, layout.frame_height))
+            print(f"[detect] annotating -> {vpath}")
         process_camera(cam, clip_path, layout, registry, emitter, model,
-                       args.sample_fps, args.device, evidence, crops)
+                       args.sample_fps, args.device, evidence, crops, writer)
+        if writer is not None:
+            writer.release()
 
     decisions = decide_staff(evidence, crops, vlm)
     emitter.apply_staff_decisions(decisions)

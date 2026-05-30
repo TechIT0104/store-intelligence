@@ -116,14 +116,29 @@ class VisitorRegistry:
             rec.last_seen = clip_t
 
 
-def signature_from_crop(crop_bgr) -> np.ndarray:
-    """8x8x8 HSV histogram, L1-normalised, flattened to 512-vector."""
+def _hsv_hist(bgr) -> np.ndarray:
     import cv2
+    hsv = cv2.cvtColor(bgr, cv2.COLOR_BGR2HSV)
+    h = cv2.calcHist([hsv], [0, 1, 2], None, [8, 8, 8],
+                     [0, 180, 0, 256, 0, 256]).flatten().astype(np.float32)
+    s = h.sum()
+    return h / s if s > 0 else h
+
+
+def signature_from_crop(crop_bgr) -> np.ndarray:
+    """Spatial colour descriptor: separate upper/lower-body HSV histograms.
+
+    Splitting the crop into top and bottom halves captures the vertical colour
+    layout (e.g. dark uniform top + light trousers) which is far more discriminative
+    across cameras than one global histogram — a lightweight stand-in for a learned
+    Re-ID embedding. PRODUCTION UPGRADE PATH: replace this single function with an
+    OSNet/torchreid embedding (cosine similarity in `hist_similarity` already works
+    for any fixed-length vector); the rest of the registry is unchanged.
+    """
     if crop_bgr is None or crop_bgr.size == 0:
-        return np.zeros(512, dtype=np.float32)
-    hsv = cv2.cvtColor(crop_bgr, cv2.COLOR_BGR2HSV)
-    hist = cv2.calcHist([hsv], [0, 1, 2], None, [8, 8, 8],
-                        [0, 180, 0, 256, 0, 256])
-    hist = hist.flatten().astype(np.float32)
-    s = hist.sum()
-    return hist / s if s > 0 else hist
+        return np.zeros(1024, dtype=np.float32)
+    h = crop_bgr.shape[0]
+    mid = max(1, h // 2)
+    upper = _hsv_hist(crop_bgr[:mid])
+    lower = _hsv_hist(crop_bgr[mid:]) if h > 1 else np.zeros(512, dtype=np.float32)
+    return np.concatenate([upper, lower]).astype(np.float32)
