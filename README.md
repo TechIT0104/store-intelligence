@@ -93,6 +93,10 @@ genuinely connected, not batch-only.
 - **Optional rate limiting**: set `RATE_LIMIT_PER_MIN=600` for a per-IP budget.
 - **CORS** configurable via `CORS_ORIGINS`.
 - DB credentials via env/secret; no secrets in the image.
+- **Observability**: `GET /metrics` (Prometheus) — request counter, latency histogram,
+  events-ingested counter — plus structured JSON request logs (trace_id, latency, ...).
+- **Concurrency-safe ingest**: `INSERT ... ON CONFLICT DO NOTHING`, so identical
+  payloads racing in parallel stay idempotent (no primary-key 5xx).
 
 ---
 
