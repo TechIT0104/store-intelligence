@@ -128,6 +128,19 @@ output schema, deliberately seeded with every edge case, so they serve as both a
 validation fixture and a recall target. The API is data-agnostic: the held-out
 scoring event set is ingested through the same `/events/ingest` path.
 
+**Real detection vs the live demo (honest disclosure).** Running the pipeline on
+the clips produces `pipeline/output/events.jsonl` — 748 events, 27 visitors,
+correct ENTRY/EXIT counts, and a multi-signal staff split. In this footage the
+billing camera mainly sees staff behind the counter, and **cross-camera Re-ID does
+not yet link a floor customer through to the billing camera** (the exact
+"camera overlap / cross-camera dedup" problem the brief lists as hard), so the raw
+detection shows few customer purchases. The **live dashboard therefore replays the
+validated `sample_events.jsonl`** so every funnel stage and the north-star
+conversion metric are exercised end-to-end through the real API + Redis + dashboard.
+Both datasets ship; `EVENTS_PATH` in `docker-compose.yml` switches the replay
+source. Improving floor→billing Re-ID (an appearance embedding shared across
+cameras) is the first thing we would harden next.
+
 ## 7. Testing
 
 `pytest` with 37 tests at **83% statement coverage** (see `.coveragerc`; the
