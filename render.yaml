@@ -1,0 +1,77 @@
+# Render Blueprint — one-click public deploy of the CORE stack (free tier).
+# Postgres + Redis (managed) · api (Docker) · replayer (worker, streams the
+# POS-grounded day) · frontend (static React, calls the api over HTTPS+CORS).
+# The heavy detection upload service is NOT deployed here (free tiers can't host the
+# 4 GB torch image) — the dashboard shows it as "offline" gracefully.
+#
+# Deploy: Render Dashboard -> New -> Blueprint -> pick this repo -> Apply.
+
+databases:
+  - name: storeiq-db
+    plan: free
+    databaseName: storeiq
+    user: storeiq
+
+services:
+  - type: redis
+    name: storeiq-redis
+    plan: free
+    ipAllowList: []
+
+  - type: web
+    name: storeiq-api
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    dockerCommand: /bin/sh -c "uvicorn app.main:app --host 0.0.0.0 --port $PORT"
+    healthCheckPath: /health
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase: { name: storeiq-db, property: connectionString }
+      - key: REDIS_URL
+        fromService: { type: redis, name: storeiq-redis, property: connectionString }
+      - key: STORE_LAYOUT_PATH
+        value: /app/data/store_layout.json
+      - key: POS_CSV_PATH
+        value: /app/data/pos_transactions.csv
+      - key: CORS_ORIGINS
+        value: "*"
+      - key: LOG_LEVEL
+        value: INFO
+
+  - type: worker
+    name: storeiq-replayer
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    dockerCommand: python -m pipeline.replay
+    envVars:
+      - key: API_URL
+        fromService: { type: web, name: storeiq-api, property: host }
+      - key: REDIS_URL
+        fromService: { type: redis, name: storeiq-redis, property: connectionString }
+      - key: STORE_ID
+        value: ST1008
+      - key: EVENTS_PATH
+        value: /app/data/sample_events.jsonl
+      - key: REPLAY_SPEED
+        value: "600"
+      - key: LOOP
+        value: "1"
+
+  - type: web
+    name: storeiq-frontend
+    runtime: static
+    rootDir: frontend
+    buildCommand: npm ci && npm run build
+    staticPublishPath: ./dist
+    pullRequestPreviewsEnabled: false
+    envVars:
+      - key: VITE_API_URL
+        fromService: { type: web, name: storeiq-api, property: host }
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html

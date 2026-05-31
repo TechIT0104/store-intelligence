@@ -3,6 +3,14 @@
 
 const STORE = "ST1008";
 
+// Local (docker): calls go through nginx — API at /api, SSE at /stream, detection
+// at /detect. Cloud (Render static site): VITE_API_URL points at the api service.
+// Render injects a bare host (no scheme), so prepend https:// when needed.
+const _raw = (import.meta.env.VITE_API_URL || "").trim();
+const _abs = _raw && !/^https?:\/\//.test(_raw) ? `https://${_raw}` : _raw;
+const API_BASE = _abs || "/api";
+const STREAM_BASE = _abs || "";
+
 export type Metrics = {
   store_id: string;
   window: { start: string; end: string };
@@ -49,7 +57,7 @@ export type Health = {
 };
 
 async function get<T>(path: string): Promise<T> {
-  const r = await fetch(`/api${path}`, { headers: { accept: "application/json" } });
+  const r = await fetch(`${API_BASE}${path}`, { headers: { accept: "application/json" } });
   if (!r.ok) throw new Error(`${path} -> ${r.status}`);
   return r.json();
 }
@@ -105,5 +113,5 @@ export const api = {
   heatmap: () => get<Heatmap>(`/stores/${STORE}/heatmap`),
   anomalies: () => get<Anomalies>(`/stores/${STORE}/anomalies`),
   health: () => get<Health>(`/health`),
-  streamUrl: () => `/stream/${STORE}`,
+  streamUrl: () => `${STREAM_BASE}/stream/${STORE}`,
 };

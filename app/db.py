@@ -68,6 +68,10 @@ _Session = None
 def init_engine(database_url: str | None = None):
     global _engine, _Session
     url = database_url or get_settings().database_url
+    # Managed Postgres (e.g. Render) hands out a bare postgresql:// URL, which
+    # SQLAlchemy maps to psycopg2; we ship psycopg (v3), so normalise the driver.
+    if url.startswith("postgresql://"):
+        url = url.replace("postgresql://", "postgresql+psycopg://", 1)
     connect_args = {"check_same_thread": False} if url.startswith("sqlite") else {}
     _engine = create_engine(url, connect_args=connect_args, pool_pre_ping=True, future=True)
     _Session = sessionmaker(bind=_engine, expire_on_commit=False, future=True)

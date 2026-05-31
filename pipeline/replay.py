@@ -18,7 +18,9 @@ from pathlib import Path
 
 import requests
 
-API_URL = os.environ.get("API_URL", "http://api:8000")
+API_URL = os.environ.get("API_URL", "http://api:8000").strip()
+if API_URL and not API_URL.startswith("http"):
+    API_URL = "https://" + API_URL          # Render injects a bare host (no scheme)
 REDIS_URL = os.environ.get("REDIS_URL", "redis://redis:6379/0")
 EVENTS_PATH = os.environ.get("EVENTS_PATH", "/app/pipeline/output/events.jsonl")
 FALLBACK_PATH = os.environ.get("FALLBACK_PATH", "/app/data/sample_events.jsonl")
