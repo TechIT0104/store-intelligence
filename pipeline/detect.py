@@ -109,7 +109,7 @@ def process_camera(cam: CameraLayout, clip_path: Path, layout: StoreLayout,
                    registry: VisitorRegistry, emitter: EventEmitter, model,
                    sample_fps: float, device: str,
                    evidence: dict[str, VisitorEvidence], crops: dict[str, tuple],
-                   writer=None):
+                   writer=None, progress_cb=None):
     cap_fps = cam.fps or 25.0
     vid_stride = max(1, int(round(cap_fps / sample_fps)))
     half = device not in ("cpu", "", None)
@@ -127,6 +127,8 @@ def process_camera(cam: CameraLayout, clip_path: Path, layout: StoreLayout,
     processed = 0
     for r in results:
         processed += 1
+        if progress_cb is not None:
+            progress_cb(processed)
         t = (processed * vid_stride) / cap_fps
         boxes = r.boxes
         frame = r.orig_img

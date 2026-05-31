@@ -1,6 +1,7 @@
 import { useDashboard, useEventStream, useTheme, useThroughput } from "./hooks";
 import { AnomaliesView, EventFeed, FunnelView, Gauge, HeatmapView, Kpi,
          Sparkline, ZoneMap } from "./components";
+import { UploadPanel } from "./UploadPanel";
 
 export default function App() {
   const snap = useDashboard();
@@ -68,9 +69,14 @@ export default function App() {
           <div className="lg:col-span-2"><FunnelView funnel={snap.funnel} /></div>
         </section>
 
-        {/* store floor map + heatmap + anomalies */}
+        {/* deployed model: upload a video -> live detection output */}
         <section className="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-4">
+          <div className="lg:col-span-2"><UploadPanel /></div>
           <ZoneMap heatmap={snap.heatmap} />
+        </section>
+
+        {/* heatmap + anomalies */}
+        <section className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4">
           <HeatmapView heatmap={snap.heatmap} />
           <AnomaliesView anomalies={snap.anomalies?.anomalies} />
         </section>

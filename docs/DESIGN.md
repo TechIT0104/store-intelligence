@@ -27,14 +27,16 @@ updating as events flow in.
                                                    └──────────┘
 ```
 
-**Why detection runs on the host, not in Docker.** GPU passthrough into Docker on
-Windows is fragile, and the challenge explicitly allows offline pre-processing
-with replay. So the heavy CV runs natively (`pipeline/run.sh` → `events.jsonl`),
-and a lightweight **replayer** container streams those events into the API in
-simulated real time. The acceptance gate (`docker compose up`) therefore never
-depends on CUDA — it brings up postgres, redis, the API, the replayer and the
-dashboard, all CPU-only. This is the single most important structural decision:
-it keeps the gate bullet-proof while still demonstrating a genuine live feed.
+**Two ways to run detection, one gate.** Detection works in two modes:
+(1) a **batch** host run (`pipeline/run.sh` → `events.jsonl`) which can use the GPU,
+and (2) a **deployed `detection` microservice** — YOLOv8 + ByteTrack running *inside
+a container* — so you can **upload a video in the dashboard and the model produces
+output live**. The detection image is heavy (torch + OpenCV), so it sits behind a
+docker-compose **`full` profile**: plain `docker compose up` brings up only the
+CPU-only core (postgres, redis, API, replayer, dashboard) and stays a fast, reliable
+**acceptance gate**, while `docker compose --profile full up` adds the deployed model
+and the upload UI. This is a deliberate gate-vs-features split — the single most
+important structural decision — and is why the gate never depends on a slow CV build.
 
 **Container-per-concern, not micro-services-for-the-sake-of-it.** The API is a
 clean modular monolith (`ingestion`, `metrics`, `funnel`, `anomalies`, `health`

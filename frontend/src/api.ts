@@ -54,6 +54,50 @@ async function get<T>(path: string): Promise<T> {
   return r.json();
 }
 
+export type DetectJob = {
+  job_id: string;
+  state: "queued" | "detecting" | "streaming" | "done" | "error";
+  filename?: string;
+  frames?: number;
+  events_total?: number;
+  events_posted?: number;
+  entry?: number;
+  exit?: number;
+  visitors?: number;
+  staff?: number;
+  zones?: Record<string, number>;
+  error?: string;
+};
+
+export const detect = {
+  available: async (): Promise<boolean> => {
+    try {
+      const r = await fetch("/detect/health");
+      return r.ok;
+    } catch {
+      return false;
+    }
+  },
+  cameras: async () => {
+    const r = await fetch("/detect/cameras");
+    return r.ok ? r.json() : { cameras: [] };
+  },
+  upload: async (file: File, camera_id: string, fps = 5): Promise<DetectJob> => {
+    const fd = new FormData();
+    fd.append("file", file);
+    fd.append("store_id", STORE);
+    fd.append("camera_id", camera_id);
+    fd.append("sample_fps", String(fps));
+    const r = await fetch("/detect/jobs", { method: "POST", body: fd });
+    if (!r.ok) throw new Error(`upload failed (${r.status})`);
+    return r.json();
+  },
+  job: async (id: string): Promise<DetectJob> => {
+    const r = await fetch(`/detect/jobs/${id}`);
+    return r.json();
+  },
+};
+
 export const api = {
   store: STORE,
   metrics: () => get<Metrics>(`/stores/${STORE}/metrics`),

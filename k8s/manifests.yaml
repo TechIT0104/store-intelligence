@@ -143,6 +143,42 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
+  name: detection
+  namespace: storeiq
+spec:
+  replicas: 1                         # heavier (torch+CV); scale on queue depth
+  selector: { matchLabels: { app: detection } }
+  template:
+    metadata: { labels: { app: detection } }
+    spec:
+      containers:
+        - name: detection
+          image: store-intelligence-detection:local
+          imagePullPolicy: IfNotPresent
+          envFrom:
+            - configMapRef: { name: storeiq-config }
+          env:
+            - { name: API_URL, value: http://api:8000 }
+            - { name: DEVICE, value: cpu }
+          ports: [{ containerPort: 9000 }]
+          readinessProbe:
+            httpGet: { path: /health, port: 9000 }
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          resources:
+            requests: { cpu: "500m", memory: "1Gi" }
+            limits: { cpu: "2", memory: "2Gi" }
+---
+apiVersion: v1
+kind: Service
+metadata: { name: detection, namespace: storeiq }
+spec:
+  selector: { app: detection }
+  ports: [{ port: 9000, targetPort: 9000 }]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
   name: dashboard
   namespace: storeiq
 spec:

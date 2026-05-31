@@ -81,8 +81,31 @@ services:
         condition: service_started
     restart: on-failure
 
+  # The DEPLOYED MODEL: YOLOv8 + ByteTrack served in-container. Upload a video and
+  # it produces events that flow onto the live dashboard. Heavy image (torch+CV),
+  # so it lives behind the `full` profile to keep the default gate fast:
+  #   docker compose up                        -> core stack (acceptance gate)
+  #   docker compose --profile full up --build -> + deployed detection + upload UI
+  detection:
+    build:
+      context: .
+      dockerfile: detection_service/Dockerfile
+    profiles: ["full"]
+    environment:
+      API_URL: http://api:8000
+      REDIS_URL: redis://redis:6379/0
+      STORE_LAYOUT_PATH: /app/data/store_layout.json
+      YOLO_MODEL: yolov8n.pt
+      DEVICE: cpu
+    depends_on:
+      api:
+        condition: service_started
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
   # React (Vite + Tailwind) dashboard served by nginx, which also acts as the edge
-  # gateway proxying /api and /stream to the api service (single origin, no CORS).
+  # gateway proxying /api, /stream and /detect to the backend services.
   frontend:
     build:
       context: ./frontend

@@ -28,6 +28,19 @@ That is everything for the **acceptance gate** — no manual steps beyond
 simulated real time, so `GET http://localhost:8000/stores/ST1008/metrics`
 returns live data immediately.
 
+### Full interactive mode (deployed model + video upload)
+
+```bash
+docker compose --profile full up --build    # adds the in-container detection model
+# open http://localhost:8050 -> "Upload & Analyze" -> drop a CCTV clip -> Run Detection
+```
+
+This brings up the **detection microservice** (YOLOv8 + ByteTrack running *inside a
+container*). Upload a video in the dashboard and the deployed model detects/tracks
+people, classifies staff, emits events to the API, and they flow live onto the
+dashboard. The heavy CV image lives behind the `full` profile so the default
+`docker compose up` (the gate) stays fast and reliable.
+
 ---
 
 ## Run the detection pipeline (on the host, against the real clips)
@@ -122,8 +135,9 @@ funnel, idempotent re-ingest, malformed-event partial success, DB-down → 503.
 
 ```
 pipeline/   detection (detect, zones, reid, staff + staff_signals + VLM, emit) + replayer
+detection_service/  the DEPLOYED model: FastAPI + YOLOv8 + ByteTrack in a container
 app/        FastAPI: ingestion, metrics, funnel, anomalies, health, stream, security, db
-frontend/   React + Vite + Tailwind dashboard, served by nginx (edge gateway)
+frontend/   React + Vite + Tailwind dashboard + Upload&Analyze, served by nginx (gateway)
 tests/      pytest suite, 43 tests (prompt blocks at top of each file)
 k8s/        Kubernetes manifests (production deployment path; compose is the gate)
 data/       store_layout.json, pos_transactions.csv, sample_events.jsonl (+ synth/)
