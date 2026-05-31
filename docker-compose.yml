@@ -66,9 +66,13 @@ services:
     environment:
       API_URL: http://api:8000
       REDIS_URL: redis://redis:6379/0
+      STORE_ID: ST1008
       EVENTS_PATH: /app/data/sample_events.jsonl
       FALLBACK_PATH: /app/pipeline/output/events.jsonl
-      REPLAY_SPEED: "20"   # 20x real time; set to 1 for true real-time demo
+      # full ~10h store day streams in ~1 min so the dashboard fills fast for a
+      # reviewer; set to 1 for true real-time, or LOOP=1 to re-stream continuously.
+      REPLAY_SPEED: "600"
+      LOOP: "1"
     volumes:
       - ./data:/app/data:ro
       - ./pipeline/output:/app/pipeline/output:ro

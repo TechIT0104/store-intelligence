@@ -1,7 +1,8 @@
 """FastAPI entrypoint — wires endpoints, middleware, startup, error handling.
 
-Acceptance gate: `docker compose up` starts this; GET /stores/STORE_BLR_002/metrics
+Acceptance gate: `docker compose up` starts this; GET /stores/ST1008/metrics
 returns valid JSON; POST /events/ingest never 5xx on malformed input (partial success).
+(The endpoint is store-agnostic, so the brief's example id STORE_BLR_002 also responds.)
 """
 from __future__ import annotations
 

@@ -32,7 +32,7 @@ def test_entry_line_direction():
 
 def test_layout_loads():
     L = StoreLayout.load("data/store_layout.json")
-    assert L.store_id == "STORE_BLR_002"
+    assert L.store_id == "ST1008"
     assert "CAM_ENTRY_01" in L.cameras
     assert L.cameras["CAM_ENTRY_01"].entry_line is not None
 

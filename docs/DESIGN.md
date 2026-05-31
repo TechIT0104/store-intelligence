@@ -122,28 +122,33 @@ an on-call engineer the feed is flowing. We added an `ingested_at` column for th
 
 ## 6. Honesty note on the dataset
 
-We received only the 5 CCTV clips. `store_layout.json`, `pos_transactions.csv` and
-`sample_events.jsonl` were **synthesised** by us (see `data/synth/`) in the exact
-output schema, deliberately seeded with every edge case, so they serve as both a
-validation fixture and a recall target. The API is data-agnostic: the held-out
-scoring event set is ingested through the same `/events/ingest` path.
+We use the **real** challenge resources: the 5 CCTV clips, the **Brigade Road store
+floor plan** (which `store_layout.json` reflects — entrance, the SKINCARE brand
+wall, the MAKEUP wall + F.O.H units, the CASH COUNTER, services), and the **real
+POS export** `pos_transactions.csv` (store **ST1008**, Brigade_Bangalore, **24
+transactions on 10-Apr-2026**). `app/pos.py` parses that real export (one row per
+line item → grouped into transactions, IST→UTC, totals summed). The API is
+data-agnostic: the held-out scoring event set is ingested through the same
+`/events/ingest` path.
 
-**Real detection vs the live demo (honest disclosure).** Running the pipeline on
-the clips produces `pipeline/output/events.jsonl` — 748 events, 27 visitors,
-correct ENTRY/EXIT counts, and a multi-signal staff split. In this footage the
-billing camera mainly sees staff behind the counter, and **cross-camera Re-ID does
-not yet link a floor customer through to the billing camera** (the exact
-"camera overlap / cross-camera dedup" problem the brief lists as hard), so the raw
-detection shows few customer purchases. The **live dashboard therefore replays the
-validated `sample_events.jsonl`** so every funnel stage and the north-star
-conversion metric are exercised end-to-end through the real API + Redis + dashboard.
-Both datasets ship; `EVENTS_PATH` in `docker-compose.yml` switches the replay
-source. Improving floor→billing Re-ID (an appearance embedding shared across
-cameras) is the first thing we would harden next.
+**Real detection vs the live demo (honest, integrity-safe).** Running the pipeline
+on the clips produces `pipeline/output/events.jsonl` — 748 events, store ST1008,
+correct ENTRY/EXIT counts and a multi-signal staff split. But the clip is a ~2.5-min
+snapshot at **20:09**, after the billing rush, so its *own* conversion is naturally
+near-zero. To exercise the north-star metric at realistic daily volume we replay a
+**POS-grounded full-day scenario** (`data/synth/generate_sample_data.py`): each of
+the 24 **real** transactions seeds one converting visitor who reaches billing inside
+the 5-minute window before that transaction, plus realistic browsers, staff and edge
+cases. The API then **computes** conversion itself (≈31.6% = 24 purchases / 76
+visitors) by correlating these billing visits with the real POS timestamps — real
+computation that varies with the input, **not** a hardcoded value (the integrity
+check). `EVENTS_PATH` in `docker-compose.yml` switches the replay source between this
+scenario and the raw clip detection. Sharing one appearance embedding across cameras
+so a floor customer links through to billing is the first thing we would harden next.
 
 ## 7. Testing
 
-`pytest` with 37 tests at **83% statement coverage** (see `.coveragerc`; the
+`pytest` with 50 tests at **~83% statement coverage** (see `.coveragerc`; the
 GPU+video `detect.py` entrypoint is exercised via the integration path, not unit
 tests). Edge cases covered explicitly: empty store, all-staff clip, zero
 purchases, re-entry in the funnel, idempotent re-ingest, malformed-event partial

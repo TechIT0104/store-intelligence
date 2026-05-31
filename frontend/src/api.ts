@@ -1,7 +1,7 @@
 // API client. All calls go through the relative `/api` prefix, which nginx
 // proxies to the api service (and Vite proxies in dev).
 
-const STORE = "STORE_BLR_002";
+const STORE = "ST1008";
 
 export type Metrics = {
   store_id: string;

@@ -1,4 +1,4 @@
-# Apex Retail — Store Intelligence
+# Store Intelligence — Purplle Brigade Road (ST1008)
 
 Turns raw store CCTV into a live **offline conversion-rate** intelligence surface:
 a detection pipeline (YOLOv8 + ByteTrack + Re-ID + a Gemini VLM staff check) emits
@@ -25,7 +25,7 @@ python assertions.py                 # self-check the acceptance gate (needs `pi
 
 That is everything for the **acceptance gate** — no manual steps beyond
 `git clone`. The `replayer` streams the bundled sample events into the API in
-simulated real time, so `GET http://localhost:8000/stores/STORE_BLR_002/metrics`
+simulated real time, so `GET http://localhost:8000/stores/ST1008/metrics`
 returns live data immediately.
 
 ---
@@ -67,7 +67,7 @@ docker compose restart replayer                      # replay the freshly detect
 
 Example:
 ```bash
-curl localhost:8000/stores/STORE_BLR_002/metrics
+curl localhost:8000/stores/ST1008/metrics
 curl localhost:8000/health
 ```
 

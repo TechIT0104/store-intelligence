@@ -24,7 +24,7 @@ EVENTS_PATH = os.environ.get("EVENTS_PATH", "/app/pipeline/output/events.jsonl")
 FALLBACK_PATH = os.environ.get("FALLBACK_PATH", "/app/data/sample_events.jsonl")
 REPLAY_SPEED = float(os.environ.get("REPLAY_SPEED", "20"))  # x real time
 BATCH_MAX = 100
-CHANNEL = "events:STORE_BLR_002"
+CHANNEL = "events:" + os.environ.get("STORE_ID", "ST1008")
 
 
 def _load_events() -> list[dict]:
@@ -75,13 +75,7 @@ def _post(batch: list[dict]) -> None:
         print(f"[replay] ingest failed: {e}")
 
 
-def main():
-    _wait_for_api()
-    r = _connect_redis()
-    events = _load_events()
-    if not events:
-        print("[replay] no events to replay")
-        return
+def _stream_once(events, r):
 
     def ts(e):
         return datetime.fromisoformat(e["timestamp"].replace("Z", "+00:00"))
@@ -111,7 +105,23 @@ def main():
         _post(batch)
         if r is not None:
             r.publish(CHANNEL, json.dumps({"n": len(batch), "last": batch[-1]}))
-    print("[replay] done")
+    print("[replay] pass done")
+
+
+def main():
+    _wait_for_api()
+    r = _connect_redis()
+    events = _load_events()
+    if not events:
+        print("[replay] no events to replay")
+        return
+    loop = os.environ.get("LOOP", "0") == "1"
+    while True:
+        _stream_once(events, r)
+        if not loop:
+            break
+        print("[replay] looping (LOOP=1)")
+        time.sleep(2)
 
 
 if __name__ == "__main__":

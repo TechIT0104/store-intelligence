@@ -17,7 +17,7 @@ import uuid
 import requests
 
 API = os.environ.get("API_URL", "http://localhost:8000")
-STORE = "STORE_BLR_002"
+STORE = "ST1008"
 passed = 0
 failed = 0
 

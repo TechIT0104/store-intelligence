@@ -1,11 +1,11 @@
 {
-  "store_id": "STORE_BLR_002",
-  "store_name": "Apex Retail - Bengaluru Indiranagar (anonymised)",
-  "city": "BLR",
+  "store_id": "ST1008",
+  "store_name": "Brigade_Bangalore",
+  "city": "Bangalore",
   "timezone": "Asia/Kolkata",
-  "open_hours": { "open": "10:00", "close": "22:00" },
+  "open_hours": { "open": "11:00", "close": "22:00" },
   "frame_size": { "width": 1920, "height": 1080 },
-  "_notes": "Dataset shipped 5 camera clips for ONE physical store. We map them to STORE_BLR_002 (the id the acceptance gate probes). Source clips are ~2-2.5 min at 25-30fps; clip overlay timestamp is 2026-10-04 ~20:09 IST, which we use as each clip's start time. Zone polygons are in pixel coordinates of the 1920x1080 frame and were derived by visual inspection of a mid-clip frame per camera; they are refined in pipeline/zones.py.",
+  "_notes": "Real store: ST1008 (Purplle Brigade Road, Bangalore). Zone names/structure taken from the official Brigade Road store floor plan: entrance bottom-left, SKINCARE brand wall along the top (The Face Shop, DermDoc, Minimalist, Aqualogica, Good Vibes, Lakme Skin), MAKEUP brand wall along the bottom + F.O.H makeup units (Maybelline, Faces Canada, Lakme, Colorbar, Swiss Beauty, NY Bae), CASH COUNTER (billing) on the right, plus Nail Unit / PMU services. The 5 CCTV clips map onto these zones. Clips are ~2-2.5 min at 25-30fps; clip overlay timestamp is 2026-04-10 ~20:09 IST, used as each clip's start time. Zone polygons are pixel coordinates of the 1920x1080 frame, refined in pipeline/zones.py. The original brief's example id STORE_BLR_002 also returns a valid (zero-traffic) response.",
   "cameras": [
     {
       "camera_id": "CAM_ENTRY_01",

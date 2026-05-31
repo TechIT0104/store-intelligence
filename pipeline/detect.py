@@ -289,7 +289,8 @@ def main():
 
     from ultralytics import YOLO
     model = YOLO(args.model)
-    clip_start = datetime(2026, 10, 4, 14, 39, 0, tzinfo=timezone.utc)
+    # Clip overlay reads 2026-04-10 ~20:09 IST -> 14:39 UTC (store ST1008, Brigade Road).
+    clip_start = datetime(2026, 4, 10, 14, 39, 0, tzinfo=timezone.utc)
 
     cams = sorted(layout.cameras.values(),
                   key=lambda c: (c.role != "entry_exit", c.camera_id))
