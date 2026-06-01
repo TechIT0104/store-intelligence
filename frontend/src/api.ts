@@ -128,6 +128,11 @@ export type StaffMember = {
   avg_basket_inr: number; shift_hours: number; longest_break_min: number;
   took_lunch_break: boolean; utilisation: number;
 };
+export type TimeSeries = {
+  series: { hour: string; entries: number; sales: number }[];
+  zones: { zone: string; visits: number }[];
+};
+
 export type StaffOps = {
   staff_count: number;
   summary: { total_revenue_inr: number; total_transactions: number; total_items: number;
@@ -142,10 +147,15 @@ export const api = {
   heatmap: () => get<Heatmap>(`/stores/${STORE}/heatmap`),
   anomalies: () => get<Anomalies>(`/stores/${STORE}/anomalies`),
   staff: () => get<StaffOps>(`/stores/${STORE}/staff`),
+  timeseries: () => get<TimeSeries>(`/stores/${STORE}/timeseries`),
   health: () => get<Health>(`/health`),
   seedDemo: async () => {
     const r = await fetch(`${API_BASE}/demo/seed`, { method: "POST" });
     return r.ok ? r.json() : { seeded: 0 };
+  },
+  reset: async () => {
+    const r = await fetch(`${API_BASE}/demo/reset`, { method: "POST" });
+    return r.ok ? r.json() : { deleted: 0 };
   },
   streamUrl: () => `${STREAM_BASE}/stream/${STORE}`,
 };

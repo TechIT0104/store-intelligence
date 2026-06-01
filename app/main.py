@@ -154,6 +154,44 @@ def staff_ops(id: str):
     return compute_staff_ops(id)
 
 
+@app.get("/stores/{id}/timeseries")
+def timeseries(id: str):
+    """Hourly footfall (entries) vs sales (POS) for charting. Real, input-driven."""
+    from collections import defaultdict
+    from sqlalchemy import select
+    from .db import EventRow, PosRow
+    from .queries import _aware
+    entries: dict[int, set] = defaultdict(set)
+    sales: dict[int, int] = defaultdict(int)
+    zones: dict[str, int] = defaultdict(int)
+    with session_scope() as s:
+        for vid, ts, et, zone, staff in s.execute(
+            select(EventRow.visitor_id, EventRow.ts, EventRow.event_type,
+                   EventRow.zone_id, EventRow.is_staff).where(EventRow.store_id == id)).all():
+            h = _aware(ts).astimezone().hour
+            if not staff and et == "ENTRY":
+                entries[h].add(vid)
+            if not staff and et == "ZONE_ENTER" and zone:
+                zones[zone] += 1
+        for (ts,) in s.execute(select(PosRow.ts).where(PosRow.store_id == id)).all():
+            sales[_aware(ts).astimezone().hour] += 1
+    hours = sorted(set(entries) | set(sales))
+    series = [{"hour": f"{h:02d}:00", "entries": len(entries.get(h, set())),
+               "sales": sales.get(h, 0)} for h in hours]
+    return {"store_id": id, "series": series,
+            "zones": [{"zone": z, "visits": n} for z, n in sorted(zones.items(), key=lambda x: -x[1])]}
+
+
+@app.post("/demo/reset")
+def demo_reset(id: str = "ST1008"):
+    """Clear ingested events for a store so the dashboard returns to its empty state."""
+    from sqlalchemy import delete
+    from .db import EventRow
+    with session_scope() as s:
+        n = s.execute(delete(EventRow).where(EventRow.store_id == id)).rowcount
+    return {"deleted": n, "store_id": id}
+
+
 @app.post("/demo/seed")
 def demo_seed():
     """Populate the dashboard with the POS-grounded full store day on demand.

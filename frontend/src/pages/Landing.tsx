@@ -35,8 +35,11 @@ export function Landing() {
           <motion.div {...rise(0)} className="inline-flex items-center gap-2 chip text-ink-soft mb-6">
             <span className="w-2 h-2 rounded-full bg-good animate-pulse" /> Purplle · Brigade Road · ST1008
           </motion.div>
+          <motion.div {...rise(0.04)} className="text-ink-soft text-sm mb-2 tracking-wide">
+            Welcome to
+          </motion.div>
           <motion.h1 {...rise(0.08)} className="font-display font-extrabold leading-[1.05] text-5xl sm:text-6xl">
-            Turn raw <span className="grad-text">CCTV</span><br />into store intelligence
+            <span className="grad-text">Store Intelligence</span><br />from raw CCTV
           </motion.h1>
           <motion.p {...rise(0.16)} className="mt-6 text-ink-soft text-lg max-w-xl">
             A computer-vision pipeline that detects shoppers, tracks journeys, separates
@@ -94,7 +97,7 @@ export function Landing() {
       </section>
 
       {/* feature row */}
-      <section className="relative max-w-7xl mx-auto px-6 pb-24 grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <section className="relative max-w-7xl mx-auto px-6 pb-20 grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {features.map((f, i) => (
           <motion.div key={f.t} {...rise(0.1 * i)} className="card p-5 hover:shadow-glow transition-shadow">
             <div className="text-2xl">{f.icon}</div>
@@ -103,6 +106,54 @@ export function Landing() {
           </motion.div>
         ))}
       </section>
+
+      {/* About */}
+      <section id="about" className="relative max-w-7xl mx-auto px-6 py-16 border-t border-line">
+        <h2 className="font-display font-bold text-3xl">About</h2>
+        <div className="mt-6 grid md:grid-cols-3 gap-5">
+          {[
+            ["The problem", "Online retail measures every click. Physical stores are a blind spot — no one knows how many people walked in, what they browsed, or why they didn't buy."],
+            ["What this does", "A computer-vision pipeline turns ordinary CCTV into structured events, then a real-time API computes the offline conversion rate, a session funnel, zone heatmaps and operational anomalies — correlated with the real POS."],
+            ["How it's built", "YOLOv8 + ByteTrack detection in a container, a FastAPI + Postgres + Redis intelligence service, an Apple-/NFT-inspired React dashboard, all via docker compose, with Kubernetes manifests and CI."],
+          ].map(([t, d], i) => (
+            <motion.div key={t} {...rise(0.08 * i)} className="card p-6">
+              <div className="font-semibold">{t}</div>
+              <p className="text-[14px] text-ink-soft mt-2 leading-relaxed">{d}</p>
+            </motion.div>
+          ))}
+        </div>
+      </section>
+
+      {/* How to use */}
+      <section id="how" className="relative max-w-7xl mx-auto px-6 py-16 border-t border-line">
+        <h2 className="font-display font-bold text-3xl">How to use it</h2>
+        <div className="mt-6 grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {[
+            ["1", "Open the Dashboard", "It starts empty — waiting for a clip, just like a fresh store feed."],
+            ["2", "Run a demo", "Replay the full POS-grounded store day, or run the model on a real CCTV clip (1–5)."],
+            ["3", "…or upload", "Drop your own video; the deployed model detects, tracks and emits events live."],
+            ["4", "Explore", "Watch conversion, funnel, heatmaps and charts update, then open Store Ops for staff."],
+          ].map(([n, t, d], i) => (
+            <motion.div key={t} {...rise(0.08 * i)} className="card p-6">
+              <div className="w-9 h-9 rounded-xl grad-btn grid place-items-center font-bold text-white">{n}</div>
+              <div className="font-semibold mt-3">{t}</div>
+              <p className="text-[13px] text-ink-soft mt-1 leading-relaxed">{d}</p>
+            </motion.div>
+          ))}
+        </div>
+        <div className="mt-10 flex justify-center">
+          <Link to="/dashboard"
+            className="grad-btn text-white px-8 py-3.5 rounded-2xl font-semibold hover:scale-[1.03] transition-transform">
+            Get started → open the dashboard
+          </Link>
+        </div>
+      </section>
+
+      <footer className="relative border-t border-line py-8 text-center text-[12px] text-ink-faint">
+        Store Intelligence · Purplle Brigade Road (ST1008) ·
+        <a href="https://github.com/TechIT0104/store-intelligence" target="_blank" rel="noreferrer"
+           className="text-ink-soft hover:text-ink"> GitHub ↗</a>
+      </footer>
     </div>
   );
 }

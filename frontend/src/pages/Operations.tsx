@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { api, StaffOps } from "../api";
 import { Card } from "../components";
+import { RevenueBarChart } from "../charts";
 import { Loader } from "../Loading";
 import { useCountUp } from "../hooks";
 
@@ -45,6 +46,10 @@ export function Operations() {
         <Stat label="Transactions" value={data.summary.total_transactions} />
         <Stat label="Items Sold" value={data.summary.total_items} />
         <Stat label="Avg Utilisation" value={(data.summary.avg_utilisation ?? 0) * 100} suffix="%" />
+      </section>
+
+      <section className="mt-4">
+        <RevenueBarChart staff={data.staff} />
       </section>
 
       <section className="mt-4 space-y-3">

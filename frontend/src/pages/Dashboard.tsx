@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { api, DetectJob, detect } from "../api";
+import { api, DetectJob, detect, TimeSeries } from "../api";
 import { useDashboard, useEventStream, useThroughput } from "../hooks";
 import {
   AnomaliesView, EventFeed, FunnelView, Gauge, HeatmapView, Kpi, Sparkline, ZoneMap,
 } from "../components";
+import { FootfallChart, ZoneBarChart } from "../charts";
 import { UploadPanel } from "../UploadPanel";
 import { Card } from "../components";
 import { Loader } from "../Loading";
@@ -13,8 +14,16 @@ export function Dashboard() {
   const snap = useDashboard();
   const feed = useEventStream();
   const throughput = useThroughput(feed.total);
+  const [ts, setTs] = useState<TimeSeries>();
   const m = snap.metrics;
   const hasData = (m?.unique_visitors ?? 0) > 0;
+
+  useEffect(() => {
+    const f = () => api.timeseries().then(setTs).catch(() => {});
+    f(); const id = setInterval(f, 4000); return () => clearInterval(id);
+  }, []);
+
+  async function reset() { await api.reset(); setTs(undefined); }
 
   return (
     <>
@@ -30,21 +39,21 @@ export function Dashboard() {
             <span className={`w-2 h-2 rounded-full ${snap.ok ? "bg-good animate-pulse" : "bg-warn"}`} />
             {snap.ok ? "Live" : "Connecting"}
           </span>
-          {snap.health?.stores?.[0] && (
-            <span className={`chip ${snap.health.stores[0].feed === "STALE_FEED"
-              ? "text-warn border-warn/30" : "text-good border-good/30"}`}>
-              {snap.health.stores[0].feed === "STALE_FEED" ? "feed idle" : "feed healthy"}
-            </span>
+          {hasData && (
+            <button onClick={reset}
+              className="chip text-ink-soft hover:text-crit hover:border-crit/40 transition-colors">
+              ↺ Reset
+            </button>
           )}
         </div>
       </div>
 
-      {!hasData ? <EmptyState /> : <Analytics snap={snap} feed={feed} throughput={throughput} m={m} />}
+      {!hasData ? <EmptyState /> : <Analytics snap={snap} feed={feed} throughput={throughput} m={m} ts={ts} />}
     </>
   );
 }
 
-function Analytics({ snap, feed, throughput, m }: any) {
+function Analytics({ snap, feed, throughput, m, ts }: any) {
   return (
     <>
       <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -61,6 +70,12 @@ function Analytics({ snap, feed, throughput, m }: any) {
       <section className="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-4">
         <Gauge value={m?.conversion_rate ?? 0} />
         <div className="lg:col-span-2"><FunnelView funnel={snap.funnel} /></div>
+      </section>
+
+      {/* live charts driven by the ingested events */}
+      <section className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4">
+        <FootfallChart data={ts} />
+        <ZoneBarChart data={ts} />
       </section>
 
       <section className="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-4">
