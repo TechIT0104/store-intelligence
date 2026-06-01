@@ -38,6 +38,8 @@ YOLO_MODEL = os.environ.get("YOLO_MODEL", "yolov8n.pt")
 DEVICE = os.environ.get("DEVICE", "cpu")
 UPLOAD_DIR = Path(os.environ.get("UPLOAD_DIR", "/tmp/uploads"))
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+# pre-mounted CCTV clips for the "Watch a Demo" flow (mounted read-only in compose)
+DEMO_DIR = Path(os.environ.get("DEMO_DIR", "/app/clips"))
 # uploaded-clip events are anchored to the dataset's clip time so they land in the
 # dashboard's day window (store ST1008, 10-Apr-2026 ~20:09 IST = 14:39 UTC).
 CLIP_BASE = datetime(2026, 4, 10, 14, 39, 0, tzinfo=timezone.utc)
@@ -72,7 +74,15 @@ def _public(job: dict) -> dict:
     return {k: v for k, v in job.items() if k != "_video"}
 
 
-def run_job(job_id: str, video_path: Path, store_id: str, camera_id: str, sample_fps: float):
+def _clip_to_camera(clip_name: str) -> str:
+    for c in layout.cameras.values():
+        if c.source_clip == clip_name:
+            return c.camera_id
+    return "CAM_FLOOR_02"
+
+
+def run_job(job_id: str, video_path: Path, store_id: str, camera_id: str,
+            sample_fps: float, cleanup: bool = True):
     import json
     job = jobs[job_id]
     r = _redis()
@@ -139,10 +149,11 @@ def run_job(job_id: str, video_path: Path, store_id: str, camera_id: str, sample
         job.update(state="error", error=str(ex))
         publish()
     finally:
-        try:
-            video_path.unlink(missing_ok=True)
-        except Exception:
-            pass
+        if cleanup:
+            try:
+                video_path.unlink(missing_ok=True)
+            except Exception:
+                pass
 
 
 def _post(batch, store_id, r):
@@ -183,6 +194,34 @@ async def create_job(file: UploadFile = File(...), store_id: str = Form("ST1008"
                     "frames": 0, "events_posted": 0, "created_at": time.time()}
     threading.Thread(target=run_job,
                      args=(job_id, dest, store_id, camera_id, sample_fps),
+                     daemon=True).start()
+    return JSONResponse(status_code=202, content=_public(jobs[job_id]))
+
+
+@app.get("/demos")
+def demos():
+    """List pre-mounted CCTV clips available for the 'Watch a Demo' flow."""
+    out = []
+    if DEMO_DIR.exists():
+        for p in sorted(DEMO_DIR.glob("*.mp4")):
+            out.append({"clip": p.name, "camera_id": _clip_to_camera(p.name),
+                        "size_mb": round(p.stat().st_size / 1e6, 1)})
+    return {"demos": out, "available": bool(out)}
+
+
+@app.post("/demos/run")
+def run_demo(clip: str = Form(...), camera_id: str = Form(""), store_id: str = Form("ST1008"),
+             sample_fps: float = Form(5.0)):
+    src = DEMO_DIR / clip
+    if not src.exists():
+        return JSONResponse(status_code=404, content={"error": f"clip not found: {clip}"})
+    cam = camera_id or _clip_to_camera(clip)
+    job_id = "demo_" + uuid.uuid4().hex[:8]
+    jobs[job_id] = {"job_id": job_id, "state": "queued", "filename": clip,
+                    "store_id": store_id, "camera_id": cam, "demo": True,
+                    "frames": 0, "events_posted": 0, "created_at": time.time()}
+    threading.Thread(target=run_job,
+                     args=(job_id, src, store_id, cam, sample_fps, False),
                      daemon=True).start()
     return JSONResponse(status_code=202, content=_public(jobs[job_id]))
 

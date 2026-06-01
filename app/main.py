@@ -148,6 +148,26 @@ def anomalies(id: str):
         return detect_anomalies(s, id)
 
 
+@app.get("/stores/{id}/staff")
+def staff_ops(id: str):
+    from .staff_ops import compute_staff_ops
+    return compute_staff_ops(id)
+
+
+@app.post("/demo/seed")
+def demo_seed():
+    """Populate the dashboard with the POS-grounded full store day on demand.
+
+    Powers the dashboard's 'Watch a Demo -> Full store day' option; works without
+    the detection service. Idempotent (events dedup by event_id)."""
+    from pathlib import Path
+    for p in (get_settings().seed_events_path, "data/sample_events.jsonl",
+              "/app/data/sample_events.jsonl"):
+        if p and Path(p).exists():
+            return {"seeded": _seed_events(p), "source": p}
+    return {"seeded": 0, "source": None}
+
+
 @app.get("/health")
 def health():
     return health_report()

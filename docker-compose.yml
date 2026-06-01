@@ -49,37 +49,10 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
-  # Streams events into the API in simulated real time — the bridge between the
-  # offline pipeline and the live API/dashboard.
-  #
-  # EVENTS_PATH points at the validated sample event set so the live dashboard
-  # exercises every funnel stage and the conversion metric (the raw detection
-  # output, pipeline/output/events.jsonl, has customers on the floor cameras but
-  # cross-camera Re-ID to the billing camera is a known limitation — see DESIGN.md).
-  # To replay your real detection output instead, set:
-  #   EVENTS_PATH=/app/pipeline/output/events.jsonl
-  replayer:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    command: python -m pipeline.replay
-    environment:
-      API_URL: http://api:8000
-      REDIS_URL: redis://redis:6379/0
-      STORE_ID: ST1008
-      EVENTS_PATH: /app/data/sample_events.jsonl
-      FALLBACK_PATH: /app/pipeline/output/events.jsonl
-      # full ~10h store day streams in ~1 min so the dashboard fills fast for a
-      # reviewer; set to 1 for true real-time, or LOOP=1 to re-stream continuously.
-      REPLAY_SPEED: "600"
-      LOOP: "1"
-    volumes:
-      - ./data:/app/data:ro
-      - ./pipeline/output:/app/pipeline/output:ro
-    depends_on:
-      api:
-        condition: service_started
-    restart: on-failure
+  # NOTE: the dashboard starts EMPTY by design (waiting for a clip). Populate it
+  # from the dashboard's empty state: "Full store day" (POST /demo/seed, instant),
+  # "Watch a demo" on a real clip (detection service), or upload your own video.
+  # The standalone `pipeline/replay.py` streamer still exists for a CLI live demo.
 
   # The DEPLOYED MODEL: YOLOv8 + ByteTrack served in-container. Upload a video and
   # it produces events that flow onto the live dashboard. Heavy image (torch+CV),
@@ -97,6 +70,10 @@ services:
       STORE_LAYOUT_PATH: /app/data/store_layout.json
       YOLO_MODEL: yolov8n.pt
       DEVICE: cpu
+      DEMO_DIR: /app/clips
+    volumes:
+      # mount the CCTV clips read-only so "Watch a Demo" can run them server-side
+      - "../CCTV Footage-20260529T160731Z-3-00144614ea/CCTV Footage:/app/clips:ro"
     depends_on:
       api:
         condition: service_started

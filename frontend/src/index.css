@@ -1,26 +1,48 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sora:wght@600;700;800&display=swap');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-html { -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
-body { margin: 0; background: #f5f5f7; color: #1d1d1f;
-       transition: background .4s ease, color .4s ease; }
-html.dark body { background: #000000; color: #f5f5f7; }
+html { -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; scroll-behavior: smooth; }
+body {
+  margin: 0; color: #eceefb; font-family: Inter, system-ui, sans-serif;
+  background: #07070d;
+  background-image:
+    radial-gradient(50% 40% at 80% -5%, rgba(168,85,247,.16), transparent 70%),
+    radial-gradient(45% 35% at 10% 0%, rgba(124,92,255,.18), transparent 70%);
+  background-attachment: fixed;
+}
 
-/* subtle scrollbar, Apple-like */
-*::-webkit-scrollbar { width: 8px; height: 8px; }
-*::-webkit-scrollbar-thumb { background: rgba(0,0,0,.15); border-radius: 999px; }
-*::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar { width: 9px; height: 9px; }
+::-webkit-scrollbar-thumb { background: rgba(124,92,255,.35); border-radius: 999px; }
+::-webkit-scrollbar-track { background: transparent; }
 
-.glass { background: rgba(255,255,255,.72); backdrop-filter: saturate(180%) blur(20px); }
+@layer components {
+  .glass {
+    background: linear-gradient(180deg, rgba(255,255,255,.045), rgba(255,255,255,.02));
+    border: 1px solid rgba(255,255,255,.08);
+    backdrop-filter: blur(14px);
+  }
+  .card {
+    @apply glass rounded-3xl;
+    box-shadow: 0 1px 0 rgba(255,255,255,.04) inset, 0 24px 60px -28px rgba(0,0,0,.8);
+  }
+  .grad-text {
+    background: linear-gradient(135deg, #b9a7ff, #e879f9 55%, #f9a8d4);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .grad-btn {
+    background: linear-gradient(135deg, #7c5cff, #a855f7 55%, #ec4899);
+    box-shadow: 0 10px 30px -10px rgba(168,85,247,.6);
+  }
+  .grid-bg {
+    background-image:
+      linear-gradient(rgba(124,92,255,.06) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(124,92,255,.06) 1px, transparent 1px);
+    background-size: 44px 44px;
+    mask-image: radial-gradient(70% 60% at 50% 30%, #000 30%, transparent 75%);
+  }
+}
+
 .tnum { font-variant-numeric: tabular-nums; }
-
-/* Dark theme: override the light utility classes (higher specificity, no !important). */
-html.dark .glass { background: rgba(28,28,30,.72); }
-html.dark .bg-white { background-color: #1c1c1e; }
-html.dark .bg-canvas { background-color: #2c2c2e; }
-html.dark .text-ink { color: #f5f5f7; }
-html.dark .text-ink-soft { color: #aeaeb2; }
-html.dark .text-ink-faint { color: #8e8e93; }
-html.dark .border-black\/5 { border-color: rgba(255,255,255,.08); }
-html.dark .shadow-card { box-shadow: 0 1px 3px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.5); }
+.chip { @apply text-[11px] px-2.5 py-1 rounded-full border border-line; }

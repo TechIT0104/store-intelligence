@@ -104,6 +104,35 @@ export const detect = {
     const r = await fetch(`/detect/jobs/${id}`);
     return r.json();
   },
+  demos: async (): Promise<{ demos: { clip: string; camera_id: string }[]; available: boolean }> => {
+    try {
+      const r = await fetch("/detect/demos");
+      return r.ok ? r.json() : { demos: [], available: false };
+    } catch {
+      return { demos: [], available: false };
+    }
+  },
+  runDemo: async (clip: string): Promise<DetectJob> => {
+    const fd = new FormData();
+    fd.append("clip", clip);
+    fd.append("store_id", STORE);
+    const r = await fetch("/detect/demos/run", { method: "POST", body: fd });
+    if (!r.ok) throw new Error(`demo failed (${r.status})`);
+    return r.json();
+  },
+};
+
+export type StaffMember = {
+  salesperson: string; employee_code: string; transactions: number;
+  customers_attended: number; items_sold: number; revenue_inr: number;
+  avg_basket_inr: number; shift_hours: number; longest_break_min: number;
+  took_lunch_break: boolean; utilisation: number;
+};
+export type StaffOps = {
+  staff_count: number;
+  summary: { total_revenue_inr: number; total_transactions: number; total_items: number;
+             top_performer: string | null; avg_utilisation: number };
+  staff: StaffMember[];
 };
 
 export const api = {
@@ -112,6 +141,11 @@ export const api = {
   funnel: () => get<Funnel>(`/stores/${STORE}/funnel`),
   heatmap: () => get<Heatmap>(`/stores/${STORE}/heatmap`),
   anomalies: () => get<Anomalies>(`/stores/${STORE}/anomalies`),
+  staff: () => get<StaffOps>(`/stores/${STORE}/staff`),
   health: () => get<Health>(`/health`),
+  seedDemo: async () => {
+    const r = await fetch(`${API_BASE}/demo/seed`, { method: "POST" });
+    return r.ok ? r.json() : { seeded: 0 };
+  },
   streamUrl: () => `${STREAM_BASE}/stream/${STORE}`,
 };
