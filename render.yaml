@@ -39,27 +39,10 @@ services:
         value: "*"
       - key: LOG_LEVEL
         value: INFO
-
-  - type: worker
-    name: storeiq-replayer
-    runtime: docker
-    plan: free
-    dockerfilePath: ./Dockerfile
-    dockerContext: .
-    dockerCommand: python -m pipeline.replay
-    envVars:
-      - key: API_URL
-        fromService: { type: web, name: storeiq-api, property: host }
-      - key: REDIS_URL
-        fromService: { type: redis, name: storeiq-redis, property: connectionString }
-      - key: STORE_ID
-        value: ST1008
-      - key: EVENTS_PATH
+      # free tier has no background worker, so the API seeds the POS-grounded day
+      # into the DB on startup (idempotent) — the dashboard is populated on boot.
+      - key: SEED_EVENTS_PATH
         value: /app/data/sample_events.jsonl
-      - key: REPLAY_SPEED
-        value: "600"
-      - key: LOOP
-        value: "1"
 
   - type: web
     name: storeiq-frontend

@@ -16,6 +16,9 @@ class Settings(BaseSettings):
 
     store_layout_path: str = "data/store_layout.json"
     pos_csv_path: str = "data/pos_transactions.csv"
+    # If set, the API seeds these events into the DB on startup (idempotent). Used
+    # on free PaaS tiers that don't allow a separate replayer worker.
+    seed_events_path: str = ""
 
     log_level: str = "INFO"
 

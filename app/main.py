@@ -55,9 +55,33 @@ def _startup():
     try:
         create_all()
         added = load_pos_csv(cfg.pos_csv_path)
-        log.info("startup complete", extra={"pos_rows_loaded": added})
+        seeded = _seed_events(cfg.seed_events_path)
+        log.info("startup complete",
+                 extra={"pos_rows_loaded": added, "events_seeded": seeded})
     except Exception as e:  # never crash the app on startup data issues
         log.warning("startup data load skipped: %s", e)
+
+
+def _seed_events(path: str) -> int:
+    """Ingest a JSONL event file into the DB on startup (idempotent).
+
+    Lets free PaaS tiers (no background worker) still show a populated dashboard.
+    """
+    if not path:
+        return 0
+    import json
+    from pathlib import Path
+    p = Path(path)
+    if not p.exists():
+        return 0
+    events = [json.loads(line) for line in p.read_text(encoding="utf-8").splitlines()
+              if line.strip()]
+    if not events:
+        return 0
+    total = 0
+    for i in range(0, len(events), 500):     # respect the batch contract
+        total += ingest_events(events[i:i + 500]).accepted
+    return total
 
 
 # ---- error handlers: structured bodies, no raw stack traces ----
