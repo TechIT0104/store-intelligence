@@ -22,7 +22,8 @@ export function Operations() {
       <div className="mb-6">
         <h1 className="font-display font-bold text-2xl text-ink">Store Operations</h1>
         <p className="text-ink-soft text-[13px] mt-1">
-          Employee performance reconstructed from the real Purplle POS export — not hardcoded.
+          Employee performance from the <b className="text-ink">real Purplle POS export</b> (Brigade Road, 10 Apr 2026) —
+          5 real staff, real transactions, real shift times. Always available; not affected by dashboard reset.
         </p>
       </div>
 
