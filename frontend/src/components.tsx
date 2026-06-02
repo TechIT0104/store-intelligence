@@ -45,7 +45,7 @@ export function Gauge({ value }: { value: number }) {
             style={{ transition: "stroke-dashoffset 1s cubic-bezier(.2,.7,.2,1)" }} />
           <defs>
             <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0%" stopColor="#7c5cff" />
+              <stop offset="0%" stopColor="#3b82f6" />
               <stop offset="100%" stopColor="#34c759" />
             </linearGradient>
           </defs>
@@ -75,16 +75,16 @@ export function FunnelView({ funnel }: { funnel?: Funnel }) {
               <span className="font-medium text-ink">{labels[s.stage] ?? s.stage}</span>
               <span className="text-ink-soft tnum">{s.count} · {s.pct_of_entry}%</span>
             </div>
-            <div className="h-9 rounded-xl bg-white/[0.05] overflow-hidden">
+            <div className="h-9 rounded-xl bg-surface2/50 overflow-hidden">
               <div className="h-full rounded-xl flex items-center px-3 text-white text-[13px] font-medium
                 transition-all duration-700 ease-out"
                 style={{ width: `${Math.max(7, (100 * s.count) / top)}%`,
-                  background: `linear-gradient(90deg,#7c5cff,${i === stages.length - 1 ? "#34c759" : "#5ac8fa"})` }}>
+                  background: `linear-gradient(90deg,#3b82f6,${i === stages.length - 1 ? "#34c759" : "#5ac8fa"})` }}>
                 {s.count > 0 ? s.count : ""}
               </div>
             </div>
             {i > 0 && s.drop_off_pct_from_prev > 0 &&
-              <div className="text-[12px] text-crit/80 mt-1">↓ {s.drop_off_pct_from_prev}% drop-off</div>}
+              <div className="text-[12px] text-red-400/80 mt-1">↓ {s.drop_off_pct_from_prev}% drop-off</div>}
           </div>
         ))}
       </div>
@@ -107,7 +107,7 @@ export function HeatmapView({ heatmap }: { heatmap?: Heatmap }) {
       <div className="flex items-center justify-between">
         <div className="text-[13px] font-medium tracking-wide text-ink-faint uppercase">Zone Heatmap</div>
         {heatmap && <span className={`text-[11px] px-2 py-0.5 rounded-full ${heatmap.data_confidence === "low"
-          ? "bg-warn/15 text-warn" : "bg-good/15 text-good"}`}>{heatmap.data_confidence} confidence</span>}
+          ? "bg-yellow-500/15 text-yellow-400" : "bg-emerald-500/15 text-emerald-400"}`}>{heatmap.data_confidence} confidence</span>}
       </div>
       <div className="mt-4 grid grid-cols-2 gap-3">
         {zones.length === 0 && <div className="col-span-2 text-ink-faint text-sm py-6 text-center">No zone data yet</div>}
@@ -127,9 +127,9 @@ export function HeatmapView({ heatmap }: { heatmap?: Heatmap }) {
 }
 
 const sevStyle: Record<string, string> = {
-  INFO: "border-brand/40 bg-brand/5", WARN: "border-warn/40 bg-warn/5", CRITICAL: "border-crit/40 bg-crit/5",
+  INFO: "border-brand/30/40 bg-brand/20/5", WARN: "border-warn/40 bg-warn/5", CRITICAL: "border-crit/40 bg-crit/5",
 };
-const sevDot: Record<string, string> = { INFO: "#7c5cff", WARN: "#ff9f0a", CRITICAL: "#ff3b30" };
+const sevDot: Record<string, string> = { INFO: "#3b82f6", WARN: "#ff9f0a", CRITICAL: "#ff3b30" };
 
 export function AnomaliesView({ anomalies }: { anomalies?: Anomaly[] }) {
   const list = anomalies ?? [];
@@ -138,7 +138,7 @@ export function AnomaliesView({ anomalies }: { anomalies?: Anomaly[] }) {
       <div className="text-[13px] font-medium tracking-wide text-ink-faint uppercase">Active Anomalies</div>
       <div className="mt-4 space-y-3">
         {list.length === 0 && (
-          <div className="flex items-center gap-2 text-good text-sm py-4">
+          <div className="flex items-center gap-2 text-emerald-400 text-sm py-4">
             <span className="w-2 h-2 rounded-full bg-good" /> All systems nominal
           </div>
         )}
@@ -147,11 +147,11 @@ export function AnomaliesView({ anomalies }: { anomalies?: Anomaly[] }) {
             <div className="flex items-center gap-2">
               <span className="w-2 h-2 rounded-full" style={{ background: sevDot[a.severity] }} />
               <span className="font-semibold text-ink">{a.type.replace(/_/g, " ")}</span>
-              <span className="ml-auto text-[11px] font-medium px-2 py-0.5 rounded-full bg-white/10 text-ink-soft">
+              <span className="ml-auto text-[11px] font-medium px-2 py-0.5 rounded-full bg-white/[0.08] text-ink-soft">
                 {a.severity}</span>
             </div>
             <div className="text-[13px] text-ink-soft mt-2">{a.detail}</div>
-            <div className="text-[13px] text-brand mt-1">→ {a.suggested_action}</div>
+            <div className="text-[13px] text-brand-2 mt-1">→ {a.suggested_action}</div>
           </div>
         ))}
       </div>
@@ -175,14 +175,14 @@ export function Sparkline({ data }: { data: number[] }) {
       <svg width="100%" viewBox={`0 0 ${w} ${h}`} className="mt-3" preserveAspectRatio="none">
         <defs>
           <linearGradient id="spark" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#7c5cff" stopOpacity="0.35" />
-            <stop offset="100%" stopColor="#7c5cff" stopOpacity="0" />
+            <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.35" />
+            <stop offset="100%" stopColor="#3b82f6" stopOpacity="0" />
           </linearGradient>
         </defs>
         {data.length > 1 && (
           <>
             <polygon points={`${pad},${h - pad} ${pts} ${w - pad},${h - pad}`} fill="url(#spark)" />
-            <polyline points={pts} fill="none" stroke="#7c5cff" strokeWidth="2"
+            <polyline points={pts} fill="none" stroke="#3b82f6" strokeWidth="2"
               strokeLinejoin="round" strokeLinecap="round" />
           </>
         )}
@@ -207,7 +207,7 @@ export function ZoneMap({ heatmap }: { heatmap?: Heatmap }) {
     <Card delay={60}>
       <div className="text-[13px] font-medium tracking-wide text-ink-faint uppercase">Store Floor Activity</div>
       <div className="relative mt-3 w-full" style={{ paddingBottom: "62%" }}>
-        <div className="absolute inset-0 rounded-2xl bg-white/[0.05] overflow-hidden">
+        <div className="absolute inset-0 rounded-2xl bg-surface2/50 overflow-hidden">
           {Object.entries(ZONE_POS).map(([zid, p]) => {
             const z = byZone.get(zid);
             const score = z?.freq_score ?? 0;
@@ -218,7 +218,7 @@ export function ZoneMap({ heatmap }: { heatmap?: Heatmap }) {
                   background: zid === "ENTRY" ? "rgba(52,199,89,0.18)" : heat(score) }}>
                 <span className="text-[12px] font-semibold text-ink">{zid}</span>
                 {z && <span className="text-[11px] text-ink-soft tnum">{z.visits} · {z.avg_dwell_seconds}s</span>}
-                {zid === "ENTRY" && <span className="text-[11px] text-good">▲ entry</span>}
+                {zid === "ENTRY" && <span className="text-[11px] text-emerald-400">▲ entry</span>}
               </div>
             );
           })}
@@ -243,7 +243,7 @@ export function EventFeed({ items, total, connected }:
         {items.length === 0 && <div className="text-ink-faint text-sm py-4">waiting for events…</div>}
         {items.map((it) => (
           <div key={it.id} className="flex items-center justify-between text-[13px] py-1.5 px-3 rounded-xl
-            bg-white/[0.05] animate-pop">
+            bg-surface2/50 animate-pop">
             <span className="font-medium text-ink">+{it.n} {it.type || "events"}</span>
             <span className="text-ink-faint tnum">{new Date(it.at).toLocaleTimeString()}</span>
           </div>

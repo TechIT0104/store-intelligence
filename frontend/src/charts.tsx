@@ -10,7 +10,7 @@ const axis = { stroke: "#6b7090", fontSize: 11 };
 function TipBox({ active, payload, label }: any) {
   if (!active || !payload?.length) return null;
   return (
-    <div className="glass rounded-xl px-3 py-2 text-[12px]">
+    <div className="rounded-xl border border-line px-3 py-2 text-[12px]">
       <div className="text-ink-faint mb-1">{label}</div>
       {payload.map((p: any) => (
         <div key={p.name} className="flex items-center gap-2">
@@ -38,21 +38,21 @@ export function FootfallChart({ data }: { data?: TimeSeries }) {
             <AreaChart data={series} margin={{ left: -18, right: 6, top: 6 }}>
               <defs>
                 <linearGradient id="gEntries" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#7c5cff" stopOpacity={0.55} />
-                  <stop offset="100%" stopColor="#7c5cff" stopOpacity={0} />
+                  <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.55} />
+                  <stop offset="100%" stopColor="#3b82f6" stopOpacity={0} />
                 </linearGradient>
                 <linearGradient id="gSales" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#34d399" stopOpacity={0.5} />
-                  <stop offset="100%" stopColor="#34d399" stopOpacity={0} />
+                  <stop offset="0%" stopColor="#10b981" stopOpacity={0.5} />
+                  <stop offset="100%" stopColor="#10b981" stopOpacity={0} />
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,.06)" />
               <XAxis dataKey="hour" tick={axis} tickLine={false} axisLine={false} />
               <YAxis tick={axis} tickLine={false} axisLine={false} width={34} />
               <Tooltip content={<TipBox />} />
-              <Area type="monotone" dataKey="entries" name="footfall" stroke="#7c5cff"
+              <Area type="monotone" dataKey="entries" name="footfall" stroke="#3b82f6"
                 strokeWidth={2} fill="url(#gEntries)" />
-              <Area type="monotone" dataKey="sales" name="sales" stroke="#34d399"
+              <Area type="monotone" dataKey="sales" name="sales" stroke="#10b981"
                 strokeWidth={2} fill="url(#gSales)" />
             </AreaChart>
           </ResponsiveContainer>
@@ -64,7 +64,7 @@ export function FootfallChart({ data }: { data?: TimeSeries }) {
 
 export function ZoneBarChart({ data }: { data?: TimeSeries }) {
   const zones = data?.zones ?? [];
-  const palette = ["#7c5cff", "#a855f7", "#ec4899", "#22d3ee", "#34d399", "#fbbf24"];
+  const palette = ["#3b82f6", "#8b5cf6", "#06b6d4", "#06b6d4", "#10b981", "#f59e0b"];
   return (
     <Card delay={120}>
       <div className="text-[13px] font-medium tracking-wide text-ink-faint uppercase">
@@ -103,8 +103,8 @@ export function RevenueBarChart({ staff }: { staff: { salesperson: string; reven
           <BarChart data={data} margin={{ left: 4, right: 6, top: 6 }}>
             <defs>
               <linearGradient id="gRev" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#a855f7" />
-                <stop offset="100%" stopColor="#7c5cff" />
+                <stop offset="0%" stopColor="#8b5cf6" />
+                <stop offset="100%" stopColor="#3b82f6" />
               </linearGradient>
             </defs>
             <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,.06)" vertical={false} />

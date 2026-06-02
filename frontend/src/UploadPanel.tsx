@@ -56,7 +56,7 @@ export function UploadPanel() {
         <div className="mt-3 text-sm text-ink-soft">
           The deployed detection service is offline. Start the full stack to enable
           live video analysis:
-          <pre className="mt-2 bg-white/[0.05] rounded-lg p-3 text-[12px] overflow-auto">docker compose --profile full up --build</pre>
+          <pre className="mt-2 bg-surface2/50 rounded-lg p-3 text-[12px] overflow-auto">docker compose --profile full up --build</pre>
         </div>
       </Card>
     );
@@ -73,7 +73,7 @@ export function UploadPanel() {
         <div className="text-[13px] font-medium tracking-wide text-ink-faint uppercase">
           Upload &amp; Analyze · deployed model
         </div>
-        <span className="text-[11px] px-2 py-0.5 rounded-full bg-good/15 text-good">YOLOv8 live</span>
+        <span className="text-[11px] px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400">YOLOv8 live</span>
       </div>
 
       <label
@@ -81,7 +81,7 @@ export function UploadPanel() {
         onDragLeave={() => setDrag(false)}
         onDrop={(e) => { e.preventDefault(); setDrag(false); setFile(e.dataTransfer.files?.[0] ?? null); }}
         className={`mt-3 flex flex-col items-center justify-center text-center rounded-2xl border-2
-          border-dashed cursor-pointer py-7 transition-colors ${drag ? "border-brand bg-brand/5" : "border-line "}`}>
+          border-dashed cursor-pointer py-7 transition-colors ${drag ? "border-brand/30 bg-brand/20/5" : "border-line "}`}>
         <input type="file" accept="video/*" className="hidden"
           onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
         <div className="text-3xl">🎥</div>
@@ -95,8 +95,8 @@ export function UploadPanel() {
           {cameras.map((c) => <option key={c.camera_id} value={c.camera_id}>{c.camera_id} · {c.role}</option>)}
         </select>
         <button onClick={run} disabled={!file || busy}
-          className="px-4 py-2 rounded-lg bg-brand text-white text-sm font-medium
-            disabled:opacity-40 hover:bg-brand-2 transition-colors">
+          className="px-4 py-2 rounded-lg bg-brand/20 text-white text-sm font-medium
+            disabled:opacity-40 hover:bg-brand/20-2 transition-colors">
           {busy ? "Analyzing…" : "Run Detection"}
         </button>
       </div>
@@ -107,16 +107,16 @@ export function UploadPanel() {
             <span>{STATE_LABEL[job.state] ?? job.state}{job.frames ? ` · ${job.frames} frames` : ""}</span>
             <span>{job.events_posted ?? 0}/{job.events_total ?? "?"} events</span>
           </div>
-          <div className="h-2 rounded-full bg-white/[0.05] overflow-hidden">
+          <div className="h-2 rounded-full bg-surface2/50 overflow-hidden">
             <div className="h-full rounded-full transition-all duration-500"
-              style={{ width: `${pct}%`, background: job.state === "error" ? "#ff3b30" : "linear-gradient(90deg,#7c5cff,#34c759)" }} />
+              style={{ width: `${pct}%`, background: job.state === "error" ? "#ff3b30" : "linear-gradient(90deg,#3b82f6,#34c759)" }} />
           </div>
-          {job.state === "error" && <div className="text-[12px] text-crit mt-2">{job.error}</div>}
+          {job.state === "error" && <div className="text-[12px] text-red-400 mt-2">{job.error}</div>}
           {job.state === "done" && (
             <div className="mt-3 grid grid-cols-4 gap-2 text-center">
               {[["Entries", job.entry], ["Exits", job.exit], ["Visitors", job.visitors], ["Staff", job.staff]].map(
                 ([k, v]) => (
-                  <div key={k as string} className="rounded-xl bg-white/[0.05] py-2">
+                  <div key={k as string} className="rounded-xl bg-surface2/50 py-2">
                     <div className="text-lg font-semibold tnum text-ink">{v as number}</div>
                     <div className="text-[11px] text-ink-faint">{k as string}</div>
                   </div>
@@ -126,7 +126,7 @@ export function UploadPanel() {
                   zones: {Object.entries(job.zones).map(([z, n]) => `${z} ${n}`).join(" · ")}
                 </div>
               )}
-              <div className="col-span-4 text-[12px] text-good mt-1">
+              <div className="col-span-4 text-[12px] text-emerald-400 mt-1">
                 ✓ events flowed onto the live dashboard above
               </div>
             </div>

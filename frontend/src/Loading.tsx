@@ -15,7 +15,7 @@ export function Loader({ label = "Loading…" }: { label?: string }) {
 // shimmer skeleton block for buffering states
 export function Skeleton({ className = "" }: { className?: string }) {
   return (
-    <div className={`rounded-2xl bg-white/[0.04] overflow-hidden relative ${className}`}>
+    <div className={`rounded-2xl bg-surface2/40 overflow-hidden relative ${className}`}>
       <div className="absolute inset-0 animate-shimmer"
         style={{ background: "linear-gradient(90deg,transparent,rgba(255,255,255,.06),transparent)",
                  backgroundSize: "200% 100%" }} />

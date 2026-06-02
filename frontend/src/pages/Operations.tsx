@@ -1,21 +1,7 @@
 import { useEffect, useState } from "react";
 import { api, StaffOps } from "../api";
-import { Card } from "../components";
 import { RevenueBarChart } from "../charts";
 import { Loader } from "../Loading";
-import { useCountUp } from "../hooks";
-
-function Stat({ label, value, suffix = "" }: { label: string; value: number; suffix?: string }) {
-  const v = useCountUp(value);
-  return (
-    <Card>
-      <div className="text-[12px] uppercase tracking-wide text-ink-faint">{label}</div>
-      <div className="font-display font-bold text-4xl mt-2 grad-text">
-        {Number.isInteger(value) ? Math.round(v) : v.toFixed(1)}{suffix}
-      </div>
-    </Card>
-  );
-}
 
 export function Operations() {
   const [data, setData] = useState<StaffOps | null>(null);
@@ -25,84 +11,125 @@ export function Operations() {
     api.staff().then(setData).catch((e) => setErr(String(e)));
   }, []);
 
-  if (err) return <Card><div className="text-crit text-sm">Failed to load staff data: {err}</div></Card>;
-  if (!data) return <Loader label="Reconstructing the staff day…" />;
+  if (err) return <div className="card p-6 text-red-400 text-sm">{err}</div>;
+  if (!data) return <Loader label="Loading store operations…" />;
 
   const maxRev = Math.max(1, ...data.staff.map((s) => s.revenue_inr));
 
   return (
     <>
+      {/* page header */}
       <div className="mb-6">
-        <h1 className="font-display font-bold text-3xl tracking-tight">Store Operations</h1>
-        <p className="text-ink-soft mt-1">
-          Each employee's working day reconstructed from the real POS — sales handled,
-          shift span, breaks and utilisation. Detection flags staff on the floor; POS
-          attributes the work.
+        <h1 className="font-display font-bold text-2xl text-ink">Store Operations</h1>
+        <p className="text-ink-soft text-[13px] mt-1">
+          Employee performance reconstructed from the real Purplle POS export — not hardcoded.
         </p>
       </div>
 
-      <section className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <Stat label="Revenue (₹)" value={data.summary.total_revenue_inr} />
-        <Stat label="Transactions" value={data.summary.total_transactions} />
-        <Stat label="Items Sold" value={data.summary.total_items} />
-        <Stat label="Avg Utilisation" value={(data.summary.avg_utilisation ?? 0) * 100} suffix="%" />
-      </section>
-
-      <section className="mt-4">
-        <RevenueBarChart staff={data.staff} />
-      </section>
-
-      <section className="mt-4 space-y-3">
-        {data.staff.map((s, i) => (
-          <Card key={s.salesperson + i} delay={i * 50} className="!p-5">
-            <div className="flex items-center gap-4 flex-wrap">
-              <div className="w-11 h-11 rounded-2xl grad-btn flex items-center justify-center font-bold text-white">
-                {s.salesperson.trim().slice(0, 1).toUpperCase() || "?"}
-              </div>
-              <div className="min-w-[160px]">
-                <div className="font-semibold flex items-center gap-2">
-                  {s.salesperson.trim() || "Unknown"}
-                  {i === 0 && <span className="chip text-good border-good/30">top performer</span>}
-                </div>
-                <div className="text-[12px] text-ink-faint">{s.employee_code || "—"}</div>
-              </div>
-
-              <div className="flex-1 min-w-[200px]">
-                <div className="flex justify-between text-[12px] text-ink-soft mb-1">
-                  <span>₹{s.revenue_inr.toLocaleString()}</span>
-                  <span>{s.transactions} sales · {s.items_sold} items</span>
-                </div>
-                <div className="h-2.5 rounded-full bg-white/[0.05] overflow-hidden">
-                  <div className="h-full grad-btn transition-all duration-700"
-                    style={{ width: `${(100 * s.revenue_inr) / maxRev}%` }} />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-4 gap-4 text-center">
-                <Mini label="customers" value={s.customers_attended} />
-                <Mini label="shift" value={`${s.shift_hours}h`} />
-                <Mini label="break" value={`${Math.round(s.longest_break_min)}m`}
-                  tone={s.took_lunch_break ? "warn" : undefined} />
-                <Mini label="util" value={`${Math.round(s.utilisation * 100)}%`} />
-              </div>
-            </div>
-          </Card>
+      {/* KPI row */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        {[
+          { label: "Total Revenue",   value: `₹${data.summary.total_revenue_inr.toLocaleString()}`, badge: "badge-blue" },
+          { label: "Transactions",    value: String(data.summary.total_transactions),               badge: "badge-violet" },
+          { label: "Items Sold",      value: String(data.summary.total_items),                      badge: "badge-green" },
+          { label: "Top Performer",   value: (data.summary.top_performer ?? "—").split(" ")[0],     badge: "badge-yellow" },
+        ].map((s) => (
+          <div key={s.label} className="stat-card">
+            <div className="text-[11px] uppercase tracking-wider text-ink-faint mb-2">{s.label}</div>
+            <div className="font-display font-bold text-2xl text-ink">{s.value}</div>
+            <span className={`badge ${s.badge} mt-3 inline-block`}>
+              {s.label === "Top Performer" ? "🏆 Leader" : "Today"}
+            </span>
+          </div>
         ))}
-      </section>
+      </div>
 
-      <footer className="mt-8 text-[12px] text-ink-faint text-center">
-        Break = longest idle gap between a salesperson's billings (lunch proxy). Utilisation
-        ≈ service-minutes ÷ shift-minutes. Grounded in the real POS export — no hardcoding.
-      </footer>
+      {/* revenue chart */}
+      <div className="mb-6">
+        <RevenueBarChart staff={data.staff} />
+      </div>
+
+      {/* staff table */}
+      <div className="card overflow-hidden">
+        <div className="px-5 py-4 border-b border-line flex items-center justify-between">
+          <div>
+            <div className="font-semibold text-ink">Employee Performance</div>
+            <div className="text-[12px] text-ink-faint mt-0.5">{data.staff_count} staff · 10 Apr 2026</div>
+          </div>
+          <span className="badge badge-blue">{data.staff_count} active</span>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="erp-table">
+            <thead>
+              <tr>
+                <th>Employee</th>
+                <th>Revenue</th>
+                <th>Customers</th>
+                <th>Shift</th>
+                <th>Longest Break</th>
+                <th>Utilisation</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.staff.map((s, i) => (
+                <tr key={s.salesperson + i}>
+                  <td>
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-lg grad-btn grid place-items-center
+                        text-white text-[12px] font-bold shrink-0">
+                        {s.salesperson.trim().slice(0, 1).toUpperCase() || "?"}
+                      </div>
+                      <div>
+                        <div className="text-ink font-medium text-[13px]">{s.salesperson.trim() || "Unknown"}</div>
+                        <div className="text-[11px] text-ink-faint">{s.employee_code || "—"}</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td>
+                    <div className="text-ink font-medium">₹{s.revenue_inr.toLocaleString()}</div>
+                    <div className="mt-1 w-24 h-1.5 rounded-full overflow-hidden"
+                      style={{ background: "rgba(255,255,255,0.05)" }}>
+                      <div className="h-full rounded-full grad-btn"
+                        style={{ width: `${(100 * s.revenue_inr) / maxRev}%` }} />
+                    </div>
+                  </td>
+                  <td className="text-ink">{s.customers_attended}</td>
+                  <td>{s.shift_hours}h</td>
+                  <td>
+                    <span className={s.took_lunch_break ? "text-yellow-400" : "text-ink-soft"}>
+                      {Math.round(s.longest_break_min)}m
+                      {s.took_lunch_break && <span className="ml-1 text-[11px]">(lunch)</span>}
+                    </span>
+                  </td>
+                  <td>
+                    <div className="flex items-center gap-2">
+                      <div className="w-16 h-1.5 rounded-full overflow-hidden"
+                        style={{ background: "rgba(255,255,255,0.05)" }}>
+                        <div className="h-full rounded-full"
+                          style={{ width: `${Math.round(s.utilisation * 100)}%`,
+                            background: s.utilisation > 0.2 ? "#3b82f6" : "#8b5cf6" }} />
+                      </div>
+                      <span className="text-[12px]">{Math.round(s.utilisation * 100)}%</span>
+                    </div>
+                  </td>
+                  <td>
+                    {i === 0
+                      ? <span className="badge badge-yellow">🏆 Top</span>
+                      : s.shift_hours > 4
+                        ? <span className="badge badge-green">Active</span>
+                        : <span className="badge badge-violet">Part day</span>}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <div className="px-5 py-3 border-t border-line text-[11px] text-ink-faint">
+          Break = longest idle gap between billings. Utilisation ≈ service-minutes ÷ shift-minutes.
+          Grounded in the real POS export — no hardcoding.
+        </div>
+      </div>
     </>
-  );
-}
-
-function Mini({ label, value, tone }: { label: string; value: string | number; tone?: string }) {
-  return (
-    <div>
-      <div className={`font-semibold tnum ${tone === "warn" ? "text-warn" : "text-ink"}`}>{value}</div>
-      <div className="text-[11px] text-ink-faint">{label}</div>
-    </div>
   );
 }

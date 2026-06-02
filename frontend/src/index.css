@@ -4,45 +4,69 @@
 @tailwind utilities;
 
 html { -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; scroll-behavior: smooth; }
-body {
-  margin: 0; color: #eceefb; font-family: Inter, system-ui, sans-serif;
-  background: #07070d;
-  background-image:
-    radial-gradient(50% 40% at 80% -5%, rgba(168,85,247,.16), transparent 70%),
-    radial-gradient(45% 35% at 10% 0%, rgba(124,92,255,.18), transparent 70%);
-  background-attachment: fixed;
-}
+body { margin: 0; color: #e8edf8; font-family: Inter, system-ui, sans-serif; background: #060d1a; }
 
-::-webkit-scrollbar { width: 9px; height: 9px; }
-::-webkit-scrollbar-thumb { background: rgba(124,92,255,.35); border-radius: 999px; }
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-thumb { background: rgba(59,130,246,.3); border-radius: 999px; }
 ::-webkit-scrollbar-track { background: transparent; }
 
 @layer components {
+  .card {
+    background: #0d1829;
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 1rem;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.05) inset, 0 20px 50px rgba(0,0,0,0.5);
+  }
   .glass {
-    background: linear-gradient(180deg, rgba(255,255,255,.045), rgba(255,255,255,.02));
-    border: 1px solid rgba(255,255,255,.08);
+    background: rgba(13,24,41,0.9);
+    border: 1px solid rgba(255,255,255,0.07);
     backdrop-filter: blur(14px);
   }
-  .card {
-    @apply glass rounded-3xl;
-    box-shadow: 0 1px 0 rgba(255,255,255,.04) inset, 0 24px 60px -28px rgba(0,0,0,.8);
+  .nav-item {
+    @apply flex items-center gap-3 px-3 py-2.5 rounded-xl text-[14px] font-medium
+           text-ink-soft hover:text-ink hover:bg-white/5 transition-all cursor-pointer select-none;
   }
+  .nav-item-active {
+    @apply text-brand-2 bg-brand/10;
+    box-shadow: inset 2px 0 0 #3b82f6;
+  }
+  .stat-card {
+    @apply card p-5;
+    position: relative; overflow: hidden;
+  }
+  .stat-card::before {
+    content: ''; position: absolute; left: 0; top: 0; bottom: 0;
+    width: 3px; background: linear-gradient(180deg, #3b82f6, #8b5cf6);
+  }
+  .erp-table { @apply w-full text-[13px]; border-collapse: separate; border-spacing: 0; }
+  .erp-table th {
+    @apply text-ink-faint font-medium uppercase tracking-wider text-[11px]
+           pb-3 pt-1 px-4 text-left;
+    border-bottom: 1px solid rgba(255,255,255,0.07);
+  }
+  .erp-table td { @apply px-4 py-3 text-ink-soft; border-bottom: 1px solid rgba(255,255,255,0.05); }
+  .erp-table tr:last-child td { border-bottom: none; }
+  .erp-table tbody tr:hover td { background: rgba(59,130,246,0.04); }
+  .badge { @apply text-[11px] font-medium px-2.5 py-0.5 rounded-full; }
+  .badge-blue   { @apply bg-blue-500/15 text-blue-300; }
+  .badge-green  { @apply bg-emerald-500/15 text-emerald-300; }
+  .badge-yellow { @apply bg-yellow-500/15 text-yellow-300; }
+  .badge-red    { @apply bg-red-500/15 text-red-300; }
+  .badge-violet { @apply bg-violet-500/15 text-violet-300; }
   .grad-text {
-    background: linear-gradient(135deg, #b9a7ff, #e879f9 55%, #f9a8d4);
+    background: linear-gradient(135deg, #60a5fa, #a78bfa);
     -webkit-background-clip: text; background-clip: text; color: transparent;
   }
   .grad-btn {
-    background: linear-gradient(135deg, #7c5cff, #a855f7 55%, #ec4899);
-    box-shadow: 0 10px 30px -10px rgba(168,85,247,.6);
+    background: linear-gradient(135deg, #2563eb, #3b82f6);
+    box-shadow: 0 8px 24px rgba(59,130,246,0.3);
   }
+  .chip { @apply text-[11px] px-2.5 py-1 rounded-full border border-line; }
   .grid-bg {
-    background-image:
-      linear-gradient(rgba(124,92,255,.06) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(124,92,255,.06) 1px, transparent 1px);
-    background-size: 44px 44px;
-    mask-image: radial-gradient(70% 60% at 50% 30%, #000 30%, transparent 75%);
+    background-image: linear-gradient(rgba(59,130,246,.04) 1px, transparent 1px),
+                      linear-gradient(90deg, rgba(59,130,246,.04) 1px, transparent 1px);
+    background-size: 40px 40px;
+    mask-image: radial-gradient(80% 50% at 50% 0%, #000 30%, transparent 100%);
   }
 }
-
 .tnum { font-variant-numeric: tabular-nums; }
-.chip { @apply text-[11px] px-2.5 py-1 rounded-full border border-line; }
